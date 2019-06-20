@@ -1,0 +1,4 @@
+github.com/advanderveer/go-test v1.0.1 h1:FuP/a1WOTT66sx7J6oeY+7ACmNEvBxiJh6ZdR1fc5pQ=
+github.com/advanderveer/go-test v1.0.1/go.mod h1:cTvlXX1T7hQFO4xVUN2FEVnwEkhzUZzapJOi4JCoX1I=
+github.com/dgryski/go-farm v0.0.0-20190423205320-6a90982ecee2 h1:tdlZCpZ/P9DhczCTSixgIKmwPv6+wP5DGjqLYw5SUiA=
+github.com/dgryski/go-farm v0.0.0-20190423205320-6a90982ecee2/go.mod h1:SqUrOPUnsFjfmXRMNPybcSiG0BgUW2AuFH8PAnS2iTw=
