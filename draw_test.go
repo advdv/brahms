@@ -21,19 +21,19 @@ func drawPNG(t *testing.T, buf io.Reader, name string) {
 	test.Ok(t, cmd.Run())
 }
 
-func draw(t testing.TB, w io.Writer, cores []*Core) {
+func draw(t testing.TB, w io.Writer, views map[*Node]View) {
 	fmt.Fprintln(w, `digraph {`)
 	fmt.Fprintln(w, `layout=neato;`)
 	fmt.Fprintln(w, `overlap=scalexy;`)
 	fmt.Fprintln(w, `sep="+1";`)
 
-	for _, c := range cores {
-		fmt.Fprintf(w, "\t"+`"%.6x" [style="filled,solid",label="%.6x"`, c.ID(), c.ID())
+	for self, v := range views {
+		fmt.Fprintf(w, "\t"+`"%.8x" [style="filled,solid",label="%s"`, self.Hash().Bytes(), self)
 		fmt.Fprintf(w, `,fillcolor="#ffffff"`)
 		fmt.Fprintf(w, "]\n")
 
-		for id := range c.view {
-			fmt.Fprintf(w, "\t"+`"%.6x" -> "%.6x";`+"\n", c.ID(), id)
+		for _, n := range v {
+			fmt.Fprintf(w, "\t"+`"%.8x" -> "%.8x";`+"\n", self.Hash().Bytes(), n.Hash().Bytes())
 		}
 	}
 

@@ -8,21 +8,31 @@ import (
 )
 
 // View describes a set of node ids
-type View map[NID]struct{}
+type View map[NID]Node
 
-// NewView constructs a new view that is a set of the provided ids
-func NewView(ids ...NID) (v View) {
+// NewView constructs a new view that is a set of a copy of the provided node info.
+func NewView(ns ...*Node) (v View) {
 	v = View{}
-	for _, id := range ids {
-		v[id] = struct{}{}
+	for _, n := range ns {
+		v[n.Hash()] = *n
 	}
 
 	return
 }
 
+// Read a reference to a copy of the node with the provided id
+func (v View) Read(id NID) *Node {
+	n, ok := v[id]
+	if !ok {
+		return nil
+	}
+
+	return &n
+}
+
 // Sorted returns all ids in the view set ordered in lexic order
-func (v View) Sorted() (ids []NID) {
-	ids = make([]NID, 0, len(v))
+func (v View) Sorted() (ns []Node) {
+	ids := make([]NID, 0, len(v))
 	for id := range v {
 		ids = append(ids, id)
 	}
@@ -31,13 +41,18 @@ func (v View) Sorted() (ids []NID) {
 		return bytes.Compare(ids[i][:], ids[j][:]) < 0
 	})
 
+	ns = make([]Node, len(ids))
+	for i, id := range ids {
+		ns[i] = v[id]
+	}
+
 	return
 }
 
 func (v View) String() string {
 	fields := make([]string, len(v))
-	for i, id := range v.Sorted() {
-		fields[i] = id.String()
+	for i, n := range v.Sorted() {
+		fields[i] = n.String()
 	}
 
 	return "{" + strings.Join(fields, ", ") + "}"
@@ -45,28 +60,28 @@ func (v View) String() string {
 
 // Pick at most n random members from the set and return them as a new view
 func (v View) Pick(r *rand.Rand, n int) (p View) {
-	ids := v.Sorted()
-	r.Shuffle(len(ids), func(i int, j int) {
-		ids[i], ids[j] = ids[j], ids[i]
+	ns := v.Sorted()
+	r.Shuffle(len(ns), func(i int, j int) {
+		ns[i], ns[j] = ns[j], ns[i]
 	})
 
 	p = View{}
 	for i := 0; i < n; i++ {
-		if i >= len(ids) {
+		if i >= len(ns) {
 			break
 		}
 
-		p[ids[i]] = struct{}{}
+		p[ns[i].Hash()] = ns[i]
 	}
 
 	return
 }
 
-// Concat views to this view
+// Concat views to this view and return it
 func (v View) Concat(vs ...View) View {
 	for _, vv := range vs {
-		for id := range vv {
-			v[id] = struct{}{}
+		for id, n := range vv {
+			v[id] = n
 		}
 	}
 

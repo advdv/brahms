@@ -4,7 +4,7 @@ import "context"
 
 // Transport describes how a node communicates with its peers
 type Transport interface {
-	Push(ctx context.Context, self, to NID)
+	Push(ctx context.Context, self *Node, to NID)
 	Pull(ctx context.Context, c chan<- View, from NID)
 }
 
@@ -21,11 +21,11 @@ func NewMemNetTransport() *MemNetTransport {
 
 // AddCore adds a core to the network
 func (t *MemNetTransport) AddCore(c *Core) {
-	t.cores[c.ID()] = c
+	t.cores[c.Self().Hash()] = c
 }
 
 // Push implements a push
-func (t *MemNetTransport) Push(ctx context.Context, self, to NID) {
+func (t *MemNetTransport) Push(ctx context.Context, self *Node, to NID) {
 	c, ok := t.cores[to]
 	if !ok {
 		panic("no core known for: " + to.String())
@@ -67,8 +67,8 @@ func (t *MockTransport) DidPush(id NID) (ok bool) {
 }
 
 // Push implements a push
-func (t *MockTransport) Push(ctx context.Context, self, to NID) {
-	t.pushed[self] = struct{}{}
+func (t *MockTransport) Push(ctx context.Context, self *Node, to NID) {
+	t.pushed[self.Hash()] = *self
 }
 
 // Pull implements a pull

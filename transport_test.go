@@ -3,6 +3,9 @@ package brahms
 import "testing"
 
 func TestNetCoreTranport(t *testing.T) {
+	n1 := N("127.0.0.1", 1)
+	n2 := N("127.0.0.1", 2)
+
 	tr := NewMemNetTransport()
 
 	t.Run("push", func(t *testing.T) {
@@ -11,7 +14,7 @@ func TestNetCoreTranport(t *testing.T) {
 				t.Errorf("The code did not panic")
 			}
 		}()
-		tr.Push(nil, NID{0x01}, NID{0x02})
+		tr.Push(nil, n1, n2.Hash())
 	})
 
 	t.Run("pull", func(t *testing.T) {
@@ -20,6 +23,6 @@ func TestNetCoreTranport(t *testing.T) {
 				t.Errorf("The code did not panic")
 			}
 		}()
-		tr.Pull(nil, nil, NID{0x02})
+		tr.Pull(nil, nil, n2.Hash())
 	})
 }

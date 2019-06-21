@@ -8,20 +8,20 @@ import (
 // Core implements the core algorithm
 type Core struct {
 	rnd     *rand.Rand
-	self    NID
+	self    *Node
 	view    View
-	pushes  chan NID
+	pushes  chan *Node
 	params  P
 	sampler *Sampler
 	tr      Transport
 }
 
 // NewCore initializes the core
-func NewCore(rnd *rand.Rand, self NID, v0 View, p P, tr Transport) (a *Core) {
+func NewCore(rnd *rand.Rand, self *Node, v0 View, p P, tr Transport) (a *Core) {
 	a = &Core{
 		self:    self,
 		view:    v0,
-		pushes:  make(chan NID, 100),
+		pushes:  make(chan *Node, 100),
 		params:  p,
 		sampler: NewSampler(rnd, p.l2()),
 		tr:      tr,
@@ -33,10 +33,10 @@ func NewCore(rnd *rand.Rand, self NID, v0 View, p P, tr Transport) (a *Core) {
 	return
 }
 
-// @TODO probe for sample validation
+// @TODO implement probing for sample validation
 
 // ID returns this core's id
-func (h *Core) ID() NID { return h.self }
+func (h *Core) Self() *Node { return h.self }
 
 // UpdateView runs the algorithm to update the view
 func (h *Core) UpdateView(to time.Duration) {
@@ -48,10 +48,10 @@ func (h *Core) HandlePull() View {
 	return h.view.Copy()
 }
 
-// HandlePush handles incoming ids
-func (h *Core) HandlePush(id NID) {
+// HandlePush handles incoming node info
+func (h *Core) HandlePush(other *Node) {
 	select {
-	case h.pushes <- id:
+	case h.pushes <- other:
 	default: //push buffer is full, discard
 	}
 }
