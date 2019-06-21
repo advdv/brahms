@@ -14,7 +14,7 @@ func TestNetCoreTranport(t *testing.T) {
 				t.Errorf("The code did not panic")
 			}
 		}()
-		tr.Push(nil, n1, n2.Hash())
+		tr.Push(nil, *n1, *n2)
 	})
 
 	t.Run("pull", func(t *testing.T) {
@@ -23,6 +23,6 @@ func TestNetCoreTranport(t *testing.T) {
 				t.Errorf("The code did not panic")
 			}
 		}()
-		tr.Pull(nil, nil, n2.Hash())
+		tr.Pull(nil, nil, *n2)
 	})
 }

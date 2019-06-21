@@ -8,7 +8,7 @@ import (
 
 // Brahms implements the gossip protocol and takes an old view 'v' and returns a
 // new view.
-func Brahms(self *Node, rnd *rand.Rand, p P, to time.Duration, s *Sampler, tr Transport, pushes <-chan *Node, v View) View {
+func Brahms(self *Node, rnd *rand.Rand, p P, to time.Duration, s *Sampler, tr Transport, pushes <-chan Node, v View) View {
 
 	// reset push/pull views (line 21)
 	push, pull := View{}, View{}
@@ -20,13 +20,13 @@ func Brahms(self *Node, rnd *rand.Rand, p P, to time.Duration, s *Sampler, tr Tr
 		defer cancel()
 
 		// push our own id to peers picked from the current view (line 22)
-		for id := range v.Pick(rnd, p.αl1()) {
-			go tr.Push(ctx, self, id)
+		for _, n := range v.Pick(rnd, p.αl1()) {
+			go tr.Push(ctx, *self, n)
 		}
 
 		// send pull requests to peers picked from the current view (line 25)
-		for id := range v.Pick(rnd, p.βl1()) {
-			go tr.Pull(ctx, pulls, id)
+		for _, n := range v.Pick(rnd, p.βl1()) {
+			go tr.Pull(ctx, pulls, n)
 		}
 
 		// wait for time unit to be done, cancels any open pushes/pulls (line 27)
@@ -38,7 +38,7 @@ PUSH_DRAIN:
 	for {
 		select {
 		case n := <-pushes:
-			push[n.Hash()] = *n
+			push[n.Hash()] = n
 		default:
 			break PUSH_DRAIN
 		}

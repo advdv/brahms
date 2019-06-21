@@ -10,7 +10,7 @@ type Core struct {
 	rnd     *rand.Rand
 	self    *Node
 	view    View
-	pushes  chan *Node
+	pushes  chan Node
 	params  P
 	sampler *Sampler
 	tr      Transport
@@ -21,7 +21,7 @@ func NewCore(rnd *rand.Rand, self *Node, v0 View, p P, tr Transport) (a *Core) {
 	a = &Core{
 		self:    self,
 		view:    v0,
-		pushes:  make(chan *Node, 100),
+		pushes:  make(chan Node, 100),
 		params:  p,
 		sampler: NewSampler(rnd, p.l2()),
 		tr:      tr,
@@ -49,7 +49,7 @@ func (h *Core) HandlePull() View {
 }
 
 // HandlePush handles incoming node info
-func (h *Core) HandlePush(other *Node) {
+func (h *Core) HandlePush(other Node) {
 	select {
 	case h.pushes <- other:
 	default: //push buffer is full, discard

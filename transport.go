@@ -4,8 +4,8 @@ import "context"
 
 // Transport describes how a node communicates with its peers
 type Transport interface {
-	Push(ctx context.Context, self *Node, to NID)
-	Pull(ctx context.Context, c chan<- View, from NID)
+	Push(ctx context.Context, self Node, to Node)
+	Pull(ctx context.Context, c chan<- View, from Node)
 }
 
 // MemNetTransport is an in-memory transport that allows cores to directly
@@ -25,8 +25,8 @@ func (t *MemNetTransport) AddCore(c *Core) {
 }
 
 // Push implements a push
-func (t *MemNetTransport) Push(ctx context.Context, self *Node, to NID) {
-	c, ok := t.cores[to]
+func (t *MemNetTransport) Push(ctx context.Context, self Node, to Node) {
+	c, ok := t.cores[to.Hash()]
 	if !ok {
 		panic("no core known for: " + to.String())
 	}
@@ -35,8 +35,8 @@ func (t *MemNetTransport) Push(ctx context.Context, self *Node, to NID) {
 }
 
 // Pull implements a pull
-func (t *MemNetTransport) Pull(ctx context.Context, cc chan<- View, from NID) {
-	c, ok := t.cores[from]
+func (t *MemNetTransport) Pull(ctx context.Context, cc chan<- View, from Node) {
+	c, ok := t.cores[from.Hash()]
 	if !ok {
 		panic("no core known for: " + from.String())
 	}
@@ -67,13 +67,13 @@ func (t *MockTransport) DidPush(id NID) (ok bool) {
 }
 
 // Push implements a push
-func (t *MockTransport) Push(ctx context.Context, self *Node, to NID) {
-	t.pushed[self.Hash()] = *self
+func (t *MockTransport) Push(ctx context.Context, self Node, to Node) {
+	t.pushed[self.Hash()] = self
 }
 
 // Pull implements a pull
-func (t *MockTransport) Pull(ctx context.Context, c chan<- View, from NID) {
-	v, ok := t.pulls[from]
+func (t *MockTransport) Pull(ctx context.Context, c chan<- View, from Node) {
+	v, ok := t.pulls[from.Hash()]
 	if !ok {
 		return
 	}

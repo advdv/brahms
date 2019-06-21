@@ -16,7 +16,7 @@ func TestBrahmsNoReply(t *testing.T) {
 	s := NewSampler(r, p.l2())
 	self := n1
 
-	p0 := make(chan *Node)
+	p0 := make(chan Node)
 	v0 := NewView(n1)
 	tr0 := NewMockTransport()
 
@@ -44,8 +44,8 @@ func TestBrahmsWithJustPushes(t *testing.T) {
 	s := NewSampler(r, p.l2())
 	self := n1
 
-	p0 := make(chan *Node, 10)
-	p0 <- n2
+	p0 := make(chan Node, 10)
+	p0 <- *n2
 	v0 := NewView(n1)
 	tr0 := NewMockTransport()
 
@@ -58,9 +58,9 @@ func TestBrahmsWithJustPushes(t *testing.T) {
 	test.Equals(t, NewView(n2), s.Sample())
 
 	t.Run("with too many pushes", func(t *testing.T) {
-		p1 := make(chan *Node, 10)
-		p1 <- n3
-		p1 <- n4 //with the given params this is too much push
+		p1 := make(chan Node, 10)
+		p1 <- *n3
+		p1 <- *n4 //with the given params this is too much push
 
 		v2 := Brahms(n5, r, p, time.Millisecond*10, s, tr0, p1, v0)
 
@@ -82,8 +82,8 @@ func TestBrahmsWithPullsAndPushes(t *testing.T) {
 	other := n2
 
 	v0 := NewView(other)
-	p0 := make(chan *Node, 10)
-	p0 <- n4
+	p0 := make(chan Node, 10)
+	p0 <- *n4
 	tr0 := NewMockTransport()
 	tr0.SetPull(other.Hash(), NewView(n3, n3, self))
 
