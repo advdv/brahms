@@ -21,19 +21,26 @@ func drawPNG(t *testing.T, buf io.Reader, name string) {
 	test.Ok(t, cmd.Run())
 }
 
-func draw(t testing.TB, w io.Writer, views map[*Node]View) {
+func draw(t testing.TB, w io.Writer, views map[*Node]View, dead map[NID]struct{}) {
 	fmt.Fprintln(w, `digraph {`)
 	fmt.Fprintln(w, `layout=neato;`)
 	fmt.Fprintln(w, `overlap=scalexy;`)
 	fmt.Fprintln(w, `sep="+1";`)
 
 	for self, v := range views {
-		fmt.Fprintf(w, "\t"+`"%.8x" [style="filled,solid",label="%s"`, self.Hash().Bytes(), self)
-		fmt.Fprintf(w, `,fillcolor="#ffffff"`)
+		id := self.Hash()
+		fmt.Fprintf(w, "\t"+`"%.8x" [style="filled,solid",label="%s"`, id.Bytes(), self)
+
+		if _, ok := dead[id]; ok {
+			fmt.Fprintf(w, `,fillcolor="red"`)
+		} else {
+			fmt.Fprintf(w, `,fillcolor="#ffffff"`)
+		}
+
 		fmt.Fprintf(w, "]\n")
 
 		for _, n := range v {
-			fmt.Fprintf(w, "\t"+`"%.8x" -> "%.8x";`+"\n", self.Hash().Bytes(), n.Hash().Bytes())
+			fmt.Fprintf(w, "\t"+`"%.8x" -> "%.8x";`+"\n", id.Bytes(), n.Hash().Bytes())
 		}
 	}
 

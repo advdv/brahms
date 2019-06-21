@@ -6,6 +6,7 @@ import "context"
 type Transport interface {
 	Push(ctx context.Context, self Node, to Node)
 	Pull(ctx context.Context, c chan<- View, from Node)
+	Prober
 }
 
 // MemNetTransport is an in-memory transport that allows cores to directly
@@ -22,6 +23,18 @@ func NewMemNetTransport() *MemNetTransport {
 // AddCore adds a core to the network
 func (t *MemNetTransport) AddCore(c *Core) {
 	t.cores[c.Self().Hash()] = c
+}
+
+// Probe implements probe
+func (t *MemNetTransport) Probe(ctx context.Context, cc chan<- int, i int, n Node) {
+	c, ok := t.cores[n.Hash()]
+	if !ok {
+		panic("no core known for: " + n.String())
+	}
+
+	if c.HandleProbe() {
+		cc <- i
+	}
 }
 
 // Push implements a push
@@ -64,6 +77,11 @@ func (t *MockTransport) SetPull(id NID, v View) {
 func (t *MockTransport) DidPush(id NID) (ok bool) {
 	_, ok = t.pushed[id]
 	return
+}
+
+// Probe implements probe
+func (t *MockTransport) Probe(ctx context.Context, c chan<- int, i int, n Node) {
+	c <- i
 }
 
 // Push implements a push
