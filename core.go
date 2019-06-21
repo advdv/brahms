@@ -35,7 +35,7 @@ func NewCore(rnd *rand.Rand, self *Node, v0 View, p P, tr Transport) (a *Core) {
 
 // @TODO implement probing for sample validation
 
-// ID returns this core's id
+// Self returns this core's own node info
 func (h *Core) Self() *Node { return h.self }
 
 // UpdateView runs the algorithm to update the view

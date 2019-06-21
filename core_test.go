@@ -56,7 +56,7 @@ func TestNetworkJoin(t *testing.T) {
 func TestLargeNetwork(t *testing.T) {
 	r := rand.New(rand.NewSource(1))
 	n := uint16(100)
-	q := 10
+	q := 40
 	m := 1.0
 	l := int(math.Round(m * math.Pow(float64(n), 1.0/3)))
 	p, _ := NewParams(
@@ -84,7 +84,7 @@ func TestLargeNetwork(t *testing.T) {
 	for i := 0; i < q; i++ {
 
 		// if not short test: draw graphs
-		if !testing.Short() {
+		if !testing.Short() && i&5 == 0 {
 			views := make(map[*Node]View, len(cores))
 			for _, c := range cores {
 				views[c.Self()] = c.view.Copy()
@@ -103,7 +103,7 @@ func TestLargeNetwork(t *testing.T) {
 		}
 
 		for _, c := range cores {
-			c.UpdateView(700 * time.Microsecond)
+			c.UpdateView(100 * time.Microsecond)
 		}
 	}
 
@@ -115,5 +115,5 @@ func TestLargeNetwork(t *testing.T) {
 	wg.Wait() //wait for drawings
 
 	// average connectivity should be  this
-	test.Equals(t, 3.37, tot/float64(len(cores)))
+	test.Assert(t, tot/float64(len(cores)) > 3.1, "should be reasonably connected")
 }
