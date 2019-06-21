@@ -49,7 +49,7 @@ DRAIN:
 	for pv := range cpull {
 		for id := range pv {
 
-			//NOTE: we divert from the paper by ignoring any pulls
+			//NOTE: we divert from the paper by ignoring ourselves in any pulls
 			if id == self {
 				continue
 			}
@@ -59,9 +59,7 @@ DRAIN:
 	}
 
 	// only update our view if the nr of pushed ids was not too high (line 35)
-	// NOTE: we divert from the paper here. We're happy to update if either pull
-	// or push yielded us some nodes not necessarily both.
-	if len(push) <= p.αl1() && (len(push) > 0 || len(pull) > 0) {
+	if len(push) <= p.αl1() && len(push) > 0 && len(pull) > 0 {
 
 		// construct our new view from what we've seen this round (line 36)
 		v = push.Pick(rnd, p.αl1()).

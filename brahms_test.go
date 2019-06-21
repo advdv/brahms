@@ -42,10 +42,10 @@ func TestBrahmsWithJustPushes(t *testing.T) {
 	v0 := NewView(NID{0x01})
 	tr0 := NewMockTransport()
 
-	// with just a pull response we update the view with just that info
+	// with just a pull response we do not update the view with just that info
 	v1 := Brahms(self, r, p, time.Millisecond*10, s, tr0, p0, v0)
 	test.Equals(t, 0, len(p0))
-	test.Equals(t, NewView(id1), v1)
+	test.Equals(t, v0, v1)
 
 	// but the pushed id should have been added to the sample
 	test.Equals(t, NewView(id1), s.Sample())
