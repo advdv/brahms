@@ -21,10 +21,11 @@ var (
 
 // P offers parameter values to the algorithm
 type P interface {
-	l2() int
-	αl1() int
-	βl1() int
-	γl1() int
+	L2() int
+
+	L1α() int
+	L1β() int
+	L1γ() int
 }
 
 // NewParams checks initializes the protocol parameters
@@ -58,7 +59,7 @@ type params struct {
 	cl1 int
 }
 
-func (p *params) l2() int  { return p._l2 }
-func (p *params) αl1() int { return p.al1 }
-func (p *params) βl1() int { return p.bl1 }
-func (p *params) γl1() int { return p.cl1 }
+func (p *params) L2() int  { return p._l2 }
+func (p *params) L1α() int { return p.al1 }
+func (p *params) L1β() int { return p.bl1 }
+func (p *params) L1γ() int { return p.cl1 }

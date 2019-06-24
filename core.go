@@ -24,7 +24,7 @@ func NewCore(rnd *rand.Rand, self *Node, v0 View, p P, tr Transport) (a *Core) {
 		view:    v0,
 		pushes:  make(chan Node, 100),
 		params:  p,
-		sampler: NewSampler(rnd, p.l2(), tr),
+		sampler: NewSampler(rnd, p.L2(), tr),
 		tr:      tr,
 		rnd:     rnd,
 		alive:   true,
@@ -69,3 +69,9 @@ func (h *Core) HandlePush(other Node) {
 	default: //push buffer is full, discard
 	}
 }
+
+func (h *Core) View() View          { return h.view }
+func (h *Core) Sample() View        { return h.sampler.Sample() }
+func (h *Core) IsAlive() bool       { return h.alive }
+func (h *Core) SetAlive(alive bool) { h.alive = alive }
+func (h *Core) ClearView()          { h.view = View{} }

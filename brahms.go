@@ -6,6 +6,13 @@ import (
 	"time"
 )
 
+// Transport describes how a node communicates with its peers
+type Transport interface {
+	Push(ctx context.Context, self Node, to Node)
+	Pull(ctx context.Context, c chan<- View, from Node)
+	Prober
+}
+
 // Brahms implements the gossip protocol and takes an old view 'v' and returns a
 // new view.
 func Brahms(self *Node, rnd *rand.Rand, p P, to time.Duration, s *Sampler, tr Transport, pushes <-chan Node, v View) View {
@@ -14,18 +21,18 @@ func Brahms(self *Node, rnd *rand.Rand, p P, to time.Duration, s *Sampler, tr Tr
 	push, pull := View{}, View{}
 
 	// perform sends and write results to these channels
-	pulls := make(chan View, p.βl1())
+	pulls := make(chan View, p.L1β())
 	func() {
 		ctx, cancel := context.WithTimeout(context.Background(), to)
 		defer cancel()
 
 		// push our own id to peers picked from the current view (line 22)
-		for _, n := range v.Pick(rnd, p.αl1()) {
+		for _, n := range v.Pick(rnd, p.L1α()) {
 			go tr.Push(ctx, *self, n)
 		}
 
 		// send pull requests to peers picked from the current view (line 25)
-		for _, n := range v.Pick(rnd, p.βl1()) {
+		for _, n := range v.Pick(rnd, p.L1β()) {
 			go tr.Pull(ctx, pulls, n)
 		}
 
@@ -62,12 +69,12 @@ PULL_DRAIN:
 	}
 
 	// only update our view if the nr of pushed ids was not too high (line 35)
-	if len(push) <= p.αl1() && len(push) > 0 && len(pull) > 0 {
+	if len(push) <= p.L1α() && len(push) > 0 && len(pull) > 0 {
 
 		// construct our new view from what we've seen this round (line 36)
-		v = push.Pick(rnd, p.αl1()).
-			Concat(pull.Pick(rnd, p.βl1())).
-			Concat(s.Sample().Pick(rnd, p.γl1()))
+		v = push.Pick(rnd, p.L1α()).
+			Concat(pull.Pick(rnd, p.L1β())).
+			Concat(s.Sample().Pick(rnd, p.L1γ()))
 	}
 
 	// update the sampler with resuling push/pull (line 37)

@@ -1,4 +1,4 @@
-package brahms
+package brahms_test
 
 import (
 	"bytes"
@@ -10,24 +10,26 @@ import (
 	"testing"
 	"time"
 
+	"github.com/advanderveer/brahms"
+	"github.com/advanderveer/brahms/transport"
 	"github.com/advanderveer/go-test"
 )
 
 func TestMiniNetCore(t *testing.T) {
-	n1 := N("127.0.0.1", 1)
-	n2 := N("127.0.0.1", 2)
-	n3 := N("127.0.0.1", 3)
+	n1 := brahms.N("127.0.0.1", 1)
+	n2 := brahms.N("127.0.0.1", 2)
+	n3 := brahms.N("127.0.0.1", 3)
 
 	rnd := rand.New(rand.NewSource(1))
-	prm, _ := NewParams(0.45, 0.45, 0.1, 100, 10)
+	prm, _ := brahms.NewParams(0.45, 0.45, 0.1, 100, 10)
 
 	//create a mini network with three cores
-	tr := NewMemNetTransport()
-	c1 := NewCore(rnd, n1, NewView(n2), prm, tr)
+	tr := transport.NewMemNetTransport()
+	c1 := brahms.NewCore(rnd, n1, brahms.NewView(n2), prm, tr)
 	tr.AddCore(c1)
-	c2 := NewCore(rnd, n2, NewView(n3), prm, tr)
+	c2 := brahms.NewCore(rnd, n2, brahms.NewView(n3), prm, tr)
 	tr.AddCore(c2)
-	c3 := NewCore(rnd, n3, NewView(n1), prm, tr)
+	c3 := brahms.NewCore(rnd, n3, brahms.NewView(n1), prm, tr)
 	tr.AddCore(c3)
 
 	// after two iterations we should have a connected graph
@@ -38,12 +40,12 @@ func TestMiniNetCore(t *testing.T) {
 	}
 
 	// view and sampler should show a connected graph
-	test.Equals(t, NewView(n2, n3), c1.view)
-	test.Equals(t, NewView(n2, n3), c1.sampler.Sample())
-	test.Equals(t, NewView(n1, n3), c2.view)
-	test.Equals(t, NewView(n1, n3), c2.sampler.Sample())
-	test.Equals(t, NewView(n1, n2), c3.view)
-	test.Equals(t, NewView(n1, n2), c3.sampler.Sample())
+	test.Equals(t, brahms.NewView(n2, n3), c1.View())
+	test.Equals(t, brahms.NewView(n2, n3), c1.Sample())
+	test.Equals(t, brahms.NewView(n1, n3), c2.View())
+	test.Equals(t, brahms.NewView(n1, n3), c2.Sample())
+	test.Equals(t, brahms.NewView(n1, n2), c3.View())
+	test.Equals(t, brahms.NewView(n1, n2), c3.Sample())
 }
 
 func TestNetworkJoin(t *testing.T) {
@@ -61,25 +63,25 @@ func TestLargeNetwork(t *testing.T) {
 	d := 0.05
 	nd := int(math.Round(float64(n) * d))
 
-	m := 1.0
+	m := 2.0
 	l := int(math.Round(m * math.Pow(float64(n), 1.0/3)))
-	p, _ := NewParams(
+	p, _ := brahms.NewParams(
 		0.45,
 		0.45,
 		0.1,
 		l, l,
 	)
 
-	tr := NewMemNetTransport()
-	cores := make([]*Core, 0, n)
+	tr := transport.NewMemNetTransport()
+	cores := make([]*brahms.Core, 0, n)
 	for i := uint16(1); i <= n; i++ {
-		self := N("127.0.0.1", i)
-		other := N("127.0.0.1", i+1)
+		self := brahms.N("127.0.0.1", i)
+		other := brahms.N("127.0.0.1", i+1)
 		if i == n {
-			other = N("127.0.0.1", 1)
+			other = brahms.N("127.0.0.1", 1)
 		}
 
-		c := NewCore(r, self, NewView(other), p, tr)
+		c := brahms.NewCore(r, self, brahms.NewView(other), p, tr)
 		tr.AddCore(c)
 		cores = append(cores, c)
 	}
@@ -89,18 +91,18 @@ func TestLargeNetwork(t *testing.T) {
 
 		// if not short test: draw graphs
 		if !testing.Short() && (5&i == 0 || i == td || i == td+1) {
-			views := make(map[*Node]View, len(cores))
-			dead := make(map[NID]struct{})
+			views := make(map[*brahms.Node]brahms.View, len(cores))
+			dead := make(map[brahms.NID]struct{})
 			for _, c := range cores {
-				views[c.Self()] = c.view.Copy()
+				views[c.Self()] = c.View().Copy()
 
-				if !c.alive {
+				if !c.IsAlive() {
 					dead[c.Self().Hash()] = struct{}{}
 				}
 			}
 
 			wg.Add(1)
-			go func(i int, views map[*Node]View) {
+			go func(i int, views map[*brahms.Node]brahms.View) {
 				defer wg.Done()
 
 				buf := bytes.NewBuffer(nil)
@@ -113,7 +115,7 @@ func TestLargeNetwork(t *testing.T) {
 
 		// move the cores ahead in time
 		for _, c := range cores {
-			if !c.alive {
+			if !c.IsAlive() {
 				continue
 			}
 
@@ -125,15 +127,15 @@ func TestLargeNetwork(t *testing.T) {
 		if i == td {
 			for i := 0; i < nd; i++ {
 				idx := r.Intn(len(cores))
-				cores[idx].alive = false
-				cores[idx].view = View{}
+				cores[idx].SetAlive(false)
+				cores[idx].ClearView()
 			}
 		}
 	}
 
 	var tot float64
 	for _, c := range cores {
-		tot += float64(len(c.view))
+		tot += float64(len(c.View()))
 	}
 
 	wg.Wait() //wait for drawings

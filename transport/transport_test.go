@@ -1,15 +1,16 @@
-package brahms
+package transport
 
 import (
 	"context"
 	"testing"
 
+	"github.com/advanderveer/brahms"
 	"github.com/advanderveer/go-test"
 )
 
 func TestNetCoreTranport(t *testing.T) {
-	n1 := N("127.0.0.1", 1)
-	n2 := N("127.0.0.1", 2)
+	n1 := brahms.N("127.0.0.1", 1)
+	n2 := brahms.N("127.0.0.1", 2)
 
 	tr := NewMemNetTransport()
 
@@ -44,6 +45,6 @@ func TestNetCoreTranport(t *testing.T) {
 func TestMockTransportProbe(t *testing.T) {
 	tr := NewMockTransport()
 	c := make(chan int, 1)
-	tr.Probe(context.Background(), c, 1, Node{})
+	tr.Probe(context.Background(), c, 1, brahms.Node{})
 	test.Equals(t, 1, <-c)
 }

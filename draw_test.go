@@ -1,4 +1,4 @@
-package brahms
+package brahms_test
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"testing"
 
+	"github.com/advanderveer/brahms"
 	"github.com/advanderveer/go-test"
 )
 
@@ -21,7 +22,7 @@ func drawPNG(t *testing.T, buf io.Reader, name string) {
 	test.Ok(t, cmd.Run())
 }
 
-func draw(t testing.TB, w io.Writer, views map[*Node]View, dead map[NID]struct{}) {
+func draw(t testing.TB, w io.Writer, views map[*brahms.Node]brahms.View, dead map[brahms.NID]struct{}) {
 	fmt.Fprintln(w, `digraph {`)
 	fmt.Fprintln(w, `layout=neato;`)
 	fmt.Fprintln(w, `overlap=scalexy;`)

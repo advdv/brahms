@@ -5,7 +5,10 @@ This is an experimental implementation of [Brahms: Byzantine resilient random me
 - [x] instead of Node ids, work with ip addresses and ports
 - [x] fix send on closed channel bug with update calls with too short a context
 - [x] implement validation of the sample by probing
-- [ ] fix the myriad of race conditions on shared memory variables
+- [x] move transports to sub-package
+- [ ] refactor core
+  - [ ] refactor core to less public methods for testing
+  - [ ] fix the myriad of race conditions on shared memory variables
 - [ ] decide, use and test an actual network transport
 - [ ] implement a limited push with a small proof of work
 - [ ] test if nodes can succesfully join by just pushing there ID
