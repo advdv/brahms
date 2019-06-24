@@ -29,7 +29,7 @@ func (t *MemNetTransport) Probe(ctx context.Context, cc chan<- int, i int, n bra
 		panic("no core known for: " + n.String())
 	}
 
-	if c.HandleProbe() {
+	if c.IsActive() {
 		cc <- i
 	}
 }
@@ -41,7 +41,7 @@ func (t *MemNetTransport) Push(ctx context.Context, self brahms.Node, to brahms.
 		panic("no core known for: " + to.String())
 	}
 
-	c.HandlePush(self)
+	c.ReceiveNode(self)
 }
 
 // Pull implements a pull
@@ -51,5 +51,5 @@ func (t *MemNetTransport) Pull(ctx context.Context, cc chan<- brahms.View, from 
 		panic("no core known for: " + from.String())
 	}
 
-	cc <- c.HandlePull()
+	cc <- c.ReadView()
 }

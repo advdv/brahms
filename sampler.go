@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/dgryski/go-farm"
@@ -21,6 +22,7 @@ type Sampler struct {
 	mins   []uint64
 	sample []Node
 	prober Prober
+	mu     sync.RWMutex
 }
 
 // NewSampler initializes a sampler with the provided source of randomness
@@ -49,6 +51,7 @@ func (s *Sampler) Validate(to time.Duration) {
 		defer cancel()
 
 		// probe all currently sampled nodes
+		s.mu.RLock()
 		for i, n := range s.sample {
 			if n.IsZero() {
 				continue
@@ -56,7 +59,9 @@ func (s *Sampler) Validate(to time.Duration) {
 
 			go s.prober.Probe(ctx, probes, i, n)
 		}
+		s.mu.RUnlock()
 
+		// wait for timeout
 		<-ctx.Done()
 	}()
 
@@ -72,6 +77,7 @@ DRAIN:
 		}
 	}
 
+	s.mu.Lock()
 	for i := range s.sample {
 		if _, ok := alive[i]; ok {
 			continue //this sample replied
@@ -84,10 +90,14 @@ DRAIN:
 		s.sample[i] = Node{}
 		s.mins[i] = math.MaxUint64
 	}
+	s.mu.Unlock()
 }
 
 // Update the sampler with a new set of ids
 func (s *Sampler) Update(v View) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	for _, n := range v.Sorted() {
 
 		// @TODO we could use the crypto hash we're already using to
@@ -108,6 +118,9 @@ func (s *Sampler) Update(v View) {
 
 // Sample returns a un-biases sample from all seen nodes
 func (s *Sampler) Sample() (v View) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	v = View{}
 	for _, n := range s.sample {
 		if n.IsZero() {

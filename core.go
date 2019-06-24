@@ -2,10 +2,11 @@ package brahms
 
 import (
 	"math/rand"
+	"sync"
 	"time"
 )
 
-// Core implements the core algorithm
+// Core keeps the state of a node in the gossip network
 type Core struct {
 	rnd     *rand.Rand
 	self    *Node
@@ -14,7 +15,8 @@ type Core struct {
 	params  P
 	sampler *Sampler
 	tr      Transport
-	alive   bool
+	active  bool
+	mu      sync.RWMutex
 }
 
 // NewCore initializes the core
@@ -27,7 +29,7 @@ func NewCore(rnd *rand.Rand, self *Node, v0 View, p P, tr Transport) (a *Core) {
 		sampler: NewSampler(rnd, p.L2(), tr),
 		tr:      tr,
 		rnd:     rnd,
-		alive:   true,
+		active:  true,
 	}
 
 	//initialize the sampler with our initial view
@@ -35,8 +37,12 @@ func NewCore(rnd *rand.Rand, self *Node, v0 View, p P, tr Transport) (a *Core) {
 	return
 }
 
-// Self returns this core's own node info
-func (h *Core) Self() *Node { return h.self }
+// Self returns this core's own info
+func (h *Core) Self() (n *Node) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return h.self
+}
 
 // ValidateSample validates if all samples are still responding
 func (h *Core) ValidateSample(to time.Duration) {
@@ -45,33 +51,47 @@ func (h *Core) ValidateSample(to time.Duration) {
 
 // UpdateView runs the algorithm to update the view
 func (h *Core) UpdateView(to time.Duration) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
 	h.view = Brahms(h.self, h.rnd, h.params, to, h.sampler, h.tr, h.pushes, h.view)
 }
 
-// HandleProbe is called whenever a remote needs to know if this core is still up
-func (h *Core) HandleProbe() (ok bool) {
-	return h.alive
+// IsActive is called whenever a remote needs to know if this core is still up
+func (h *Core) IsActive() (ok bool) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return h.active
 }
 
-// HandlePull responds to pulls by returning a copy of our view
-func (h *Core) HandlePull() View {
-	if !h.alive {
+// ReadView returns a copy of our current local view
+func (h *Core) ReadView() View {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	if !h.active {
 		return View{} //we're no longer active, return nothing
 	}
 
 	return h.view.Copy()
 }
 
-// HandlePush handles incoming node info
-func (h *Core) HandlePush(other Node) {
+// ReceiveNode gets called when another peer pushes its info
+func (h *Core) ReceiveNode(other Node) {
 	select {
 	case h.pushes <- other:
 	default: //push buffer is full, discard
 	}
 }
 
-func (h *Core) View() View          { return h.view }
-func (h *Core) Sample() View        { return h.sampler.Sample() }
-func (h *Core) IsAlive() bool       { return h.alive }
-func (h *Core) SetAlive(alive bool) { h.alive = alive }
-func (h *Core) ClearView()          { h.view = View{} }
+// Deactivate clears the view and sets the core to non-active state
+func (h *Core) Deactivate() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.active = false
+	h.view = View{}
+}
+
+// Sample returns a copy of the peer samples this core has
+func (h *Core) Sample() View {
+	return h.sampler.Sample()
+}

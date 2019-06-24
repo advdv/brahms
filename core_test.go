@@ -40,11 +40,11 @@ func TestMiniNetCore(t *testing.T) {
 	}
 
 	// view and sampler should show a connected graph
-	test.Equals(t, brahms.NewView(n2, n3), c1.View())
+	test.Equals(t, brahms.NewView(n2, n3), c1.ReadView())
 	test.Equals(t, brahms.NewView(n2, n3), c1.Sample())
-	test.Equals(t, brahms.NewView(n1, n3), c2.View())
+	test.Equals(t, brahms.NewView(n1, n3), c2.ReadView())
 	test.Equals(t, brahms.NewView(n1, n3), c2.Sample())
-	test.Equals(t, brahms.NewView(n1, n2), c3.View())
+	test.Equals(t, brahms.NewView(n1, n2), c3.ReadView())
 	test.Equals(t, brahms.NewView(n1, n2), c3.Sample())
 }
 
@@ -54,12 +54,12 @@ func TestNetworkJoin(t *testing.T) {
 	//into account currently. Is that a real problem in an actual network?
 }
 
-func TestLargeNetwork(t *testing.T) {
+func TestLargerNetwork(t *testing.T) {
 	r := rand.New(rand.NewSource(1))
 	n := uint16(100)
 	q := 40
 
-	td := 20
+	td := 15
 	d := 0.05
 	nd := int(math.Round(float64(n) * d))
 
@@ -94,10 +94,11 @@ func TestLargeNetwork(t *testing.T) {
 			views := make(map[*brahms.Node]brahms.View, len(cores))
 			dead := make(map[brahms.NID]struct{})
 			for _, c := range cores {
-				views[c.Self()] = c.View().Copy()
+				cn := c.Self()
+				views[cn] = c.ReadView().Copy()
 
-				if !c.IsAlive() {
-					dead[c.Self().Hash()] = struct{}{}
+				if !c.IsActive() {
+					dead[cn.Hash()] = struct{}{}
 				}
 			}
 
@@ -115,32 +116,41 @@ func TestLargeNetwork(t *testing.T) {
 
 		// move the cores ahead in time
 		for _, c := range cores {
-			if !c.IsAlive() {
+			if !c.IsActive() {
 				continue
 			}
 
-			c.UpdateView(100 * time.Microsecond)
-			c.ValidateSample(100 * time.Microsecond)
+			var wg sync.WaitGroup
+			wg.Add(2)
+			go func() {
+				c.UpdateView(70 * time.Microsecond)
+				wg.Done()
+			}()
+			go func() {
+				c.ValidateSample(70 * time.Microsecond)
+				wg.Done()
+			}()
+			wg.Wait()
 		}
 
 		// after some time turn off some cores
 		if i == td {
 			for i := 0; i < nd; i++ {
 				idx := r.Intn(len(cores))
-				cores[idx].SetAlive(false)
-				cores[idx].ClearView()
+				cores[idx].Deactivate()
 			}
 		}
 	}
 
 	var tot float64
 	for _, c := range cores {
-		tot += float64(len(c.View()))
+		tot += float64(len(c.ReadView()))
 	}
 
 	wg.Wait() //wait for drawings
 
 	// @TODO assert that no-one connects to the in-active cores anymore
 	// @TODO assert that the rest is still connected
+	// @TODO assert that the sample converges to a stable set of peers
 	// test.Assert(t, tot/float64(len(cores)) > 3.1, "should be reasonably connected")
 }
