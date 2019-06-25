@@ -132,3 +132,14 @@ func (s *Sampler) Sample() (v View) {
 
 	return
 }
+
+// Clear the sampler of all samples and mins
+func (s *Sampler) Clear() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i := range s.mins {
+		s.mins[i] = math.MaxUint64
+	}
+
+	s.sample = make([]Node, len(s.mins))
+}

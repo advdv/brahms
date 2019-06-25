@@ -74,3 +74,21 @@ func TestViewCopy(t *testing.T) {
 	test.Equals(t, NewView(n1, n3), v3)     //no longer has element
 	test.Equals(t, NewView(n1, n2, n3), v2) //still has all elements
 }
+
+func TestViewIntersect(t *testing.T) {
+	n1 := N("127.0.0.1", 1)
+	n2 := N("127.0.0.1", 2)
+	n3 := N("127.0.0.1", 3)
+
+	test.Equals(t, NewView(), NewView(n2, n1).Inter(NewView(n3)))
+	test.Equals(t, NewView(n1), NewView(n2, n1).Inter(NewView(n3, n1)))
+}
+
+func TestViewDiff(t *testing.T) {
+	n1 := N("127.0.0.1", 1)
+	n2 := N("127.0.0.1", 2)
+	n3 := N("127.0.0.1", 3)
+
+	test.Equals(t, NewView(n2, n1), NewView(n2, n1).Diff(NewView(n3)))
+	test.Equals(t, NewView(n2), NewView(n2, n1).Diff(NewView(n3, n1)))
+}

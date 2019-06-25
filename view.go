@@ -92,3 +92,27 @@ func (v View) Concat(vs ...View) View {
 func (v View) Copy() View {
 	return View{}.Concat(v)
 }
+
+// Inter returns the intersection between two views
+func (v View) Inter(other View) (sect View) {
+	sect = View{}
+	for id, n := range v {
+		if _, ok := other[id]; ok {
+			sect[id] = n
+		}
+	}
+
+	return
+}
+
+// Diff returns all elements that are in this view but not in the other view
+func (v View) Diff(other View) (d View) {
+	d = View{}
+	for id, n := range v {
+		if _, ok := other[id]; !ok {
+			d[id] = n
+		}
+	}
+
+	return
+}

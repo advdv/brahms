@@ -11,9 +11,11 @@ This is an experimental implementation of [Brahms: Byzantine resilient random me
   - [x] formalize alive state
   - [x] fix the myriad of race conditions on shared memory variables
   - [x] test for concurrent access
+- [x] fix bug that causes cores sample not to be stable over time
+- [x] fix big that cause some deactivated cores to linger in the sample of others
 - [ ] decide, use and test an actual network transport
 - [ ] implement a limited push with a small proof of work
 - [ ] test if nodes can succesfully join by just pushing there ID
 - [ ] adjust l1 and l2 as the network grobs using an esimate as described [here](https://research.neustar.biz/2012/07/09/sketch-of-the-day-k-minimum-values/)
 - [ ] use the crypto hash for node hashing also for sampling instead of farm hash
-- [ ] probe only a part of the sampled nodes
+- [ ] probe only a part of the sampled nodes at a time

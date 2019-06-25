@@ -42,6 +42,13 @@ func TestSampler(t *testing.T) {
 	}
 
 	test.Equals(t, brahms.NewView(n2, n2, n4, n3), s.Sample())
+
+	t.Run("clearing", func(t *testing.T) {
+		s.Clear()
+		test.Equals(t, brahms.View{}, s.Sample())
+		s.Update(brahms.NewView(n3))
+		test.Equals(t, brahms.NewView(n3), s.Sample())
+	})
 }
 
 func TestSamplerValidation(t *testing.T) {

@@ -24,7 +24,7 @@ func NewCore(rnd *rand.Rand, self *Node, v0 View, p P, tr Transport) (a *Core) {
 	a = &Core{
 		self:    self,
 		view:    v0,
-		pushes:  make(chan Node, 100),
+		pushes:  make(chan Node, p.L1α()+10), // slightly larger then what the algorithm accepts
 		params:  p,
 		sampler: NewSampler(rnd, p.L2(), tr),
 		tr:      tr,
@@ -89,6 +89,7 @@ func (h *Core) Deactivate() {
 	defer h.mu.Unlock()
 	h.active = false
 	h.view = View{}
+	h.sampler.Clear()
 }
 
 // Sample returns a copy of the peer samples this core has

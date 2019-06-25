@@ -6,6 +6,7 @@ import (
 	"math"
 	"math/rand"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"testing"
 	"time"
@@ -35,8 +36,11 @@ func TestMiniNetCore(t *testing.T) {
 	// after two iterations we should have a connected graph
 	for i := 0; i < 10; i++ {
 		c1.UpdateView(time.Millisecond)
+		c1.ValidateSample(time.Millisecond)
 		c2.UpdateView(time.Millisecond)
+		c1.ValidateSample(time.Millisecond)
 		c3.UpdateView(time.Millisecond)
+		c1.ValidateSample(time.Millisecond)
 	}
 
 	// view and sampler should show a connected graph
@@ -46,6 +50,13 @@ func TestMiniNetCore(t *testing.T) {
 	test.Equals(t, brahms.NewView(n1, n3), c2.Sample())
 	test.Equals(t, brahms.NewView(n1, n2), c3.ReadView())
 	test.Equals(t, brahms.NewView(n1, n2), c3.Sample())
+
+	// test after deactivation
+	test.Equals(t, true, c1.IsActive())
+	c1.Deactivate()
+	test.Equals(t, false, c1.IsActive())
+	test.Equals(t, brahms.NewView(), c1.ReadView())
+	test.Equals(t, brahms.NewView(), c1.Sample())
 }
 
 func TestNetworkJoin(t *testing.T) {
@@ -55,15 +66,19 @@ func TestNetworkJoin(t *testing.T) {
 }
 
 func TestLargerNetwork(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+
 	r := rand.New(rand.NewSource(1))
 	n := uint16(100)
-	q := 40
+	q := 100
 
 	td := 15
 	d := 0.05
 	nd := int(math.Round(float64(n) * d))
 
-	m := 2.0
+	m := 1.0
 	l := int(math.Round(m * math.Pow(float64(n), 1.0/3)))
 	p, _ := brahms.NewParams(
 		0.45,
@@ -87,6 +102,8 @@ func TestLargerNetwork(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
+	var lastSample brahms.View
+	deactivated := map[brahms.NID]struct{}{}
 	for i := 0; i < q; i++ {
 
 		// if not short test: draw graphs
@@ -95,7 +112,7 @@ func TestLargerNetwork(t *testing.T) {
 			dead := make(map[brahms.NID]struct{})
 			for _, c := range cores {
 				cn := c.Self()
-				views[cn] = c.ReadView().Copy()
+				views[cn] = c.Sample()
 
 				if !c.IsActive() {
 					dead[cn.Hash()] = struct{}{}
@@ -120,14 +137,15 @@ func TestLargerNetwork(t *testing.T) {
 				continue
 			}
 
+			// run update and validation concurrently
 			var wg sync.WaitGroup
 			wg.Add(2)
 			go func() {
-				c.UpdateView(70 * time.Microsecond)
+				c.UpdateView(200 * time.Microsecond)
 				wg.Done()
 			}()
 			go func() {
-				c.ValidateSample(70 * time.Microsecond)
+				c.ValidateSample(1000 * time.Microsecond)
 				wg.Done()
 			}()
 			wg.Wait()
@@ -138,19 +156,39 @@ func TestLargerNetwork(t *testing.T) {
 			for i := 0; i < nd; i++ {
 				idx := r.Intn(len(cores))
 				cores[idx].Deactivate()
+				deactivated[cores[idx].Self().Hash()] = struct{}{}
 			}
 		}
+
+		// after a certain round we expect the sample to change very little
+		if i > td+5 {
+			s := cores[0].Sample()
+			if !reflect.DeepEqual(s, lastSample) {
+				diff := s.Diff(lastSample)
+				if len(diff) > 1 {
+					t.Fatalf("observed a significant sample change at %d, new nodes: %s", i, diff)
+				}
+			}
+		}
+
+		lastSample = cores[0].Sample()
 	}
 
 	var tot float64
-	for _, c := range cores {
+	for i, c := range cores {
 		tot += float64(len(c.ReadView()))
+
+		// check that none of the cores still remember the deactivated cores
+		for k, _ := range c.Sample() {
+			if _, ok := deactivated[k]; ok {
+				t.Fatalf("deactivated core should not be in any other cores sample, instead '%s' was in core %d", k, i)
+			}
+		}
 	}
 
 	wg.Wait() //wait for drawings
 
 	// @TODO assert that no-one connects to the in-active cores anymore
-	// @TODO assert that the rest is still connected
-	// @TODO assert that the sample converges to a stable set of peers
-	// test.Assert(t, tot/float64(len(cores)) > 3.1, "should be reasonably connected")
+	// @TODO assert that the rest is still connected, sometimes not above  3.1?
+	test.Assert(t, tot/float64(len(cores)) >= 3.0, fmt.Sprintf("should be reasonably connected, avg is: %f", tot/float64(len(cores))))
 }
