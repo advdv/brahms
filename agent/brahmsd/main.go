@@ -18,6 +18,11 @@ func main() {
 	signal.Notify(sigs, os.Interrupt)
 
 	cfg := agent.LocalTestConfig()
+	if os.Getenv("PORT") != "" {
+		port, _ := strconv.Atoi(os.Getenv("PORT"))
+		cfg.ListenPort = uint16(port)
+	}
+
 	a, err := agent.New(os.Stderr, cfg)
 	if err != nil {
 		panic(err)

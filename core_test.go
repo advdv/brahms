@@ -64,7 +64,7 @@ func TestLargerNetwork(t *testing.T) {
 		t.SkipNow()
 	}
 
-	r := rand.New(rand.NewSource(1))
+	r := rand.New(rand.NewSource(0))
 	n := uint16(100)
 	q := 100
 
@@ -108,7 +108,7 @@ func TestLargerNetwork(t *testing.T) {
 			joins := make(map[brahms.NID]struct{})
 			for i, c := range cores {
 				cn := c.Self()
-				views[cn] = c.Sample()
+				views[&cn] = c.Sample()
 
 				if !c.IsActive() {
 					dead[cn.Hash()] = struct{}{}
@@ -156,7 +156,8 @@ func TestLargerNetwork(t *testing.T) {
 			for i := 0; i < nd; i++ {
 				idx := r.Intn(len(cores))
 				cores[idx].Deactivate()
-				deactivated[cores[idx].Self().Hash()] = struct{}{}
+				self := cores[idx].Self()
+				deactivated[self.Hash()] = struct{}{}
 			}
 
 			// add new cores

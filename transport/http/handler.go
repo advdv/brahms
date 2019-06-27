@@ -48,11 +48,10 @@ func NewHandler(b Brahms) *Handler {
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
 	case "/push":
-		dec := h.d(r.Body)
 		defer r.Body.Close()
 
 		pr := new(MsgPushReq)
-		err := dec.Decode(pr)
+		err := h.d(r.Body).Decode(pr)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
@@ -61,14 +60,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.b.ReceiveNode(brahms.Node{IP: pr.IP, Port: pr.Port})
 
 	case "/pull":
-		enc := h.e(w)
 		view := h.b.ReadView()
 		resp := make(MsgPullResp, 0, len(view))
 		for _, n := range view {
 			resp = append(resp, MsgNode{n.IP, n.Port})
 		}
 
-		err := enc.Encode(resp)
+		err := h.e(w).Encode(resp)
 		if err != nil {
 			http.Error(w,
 				http.StatusText(http.StatusInternalServerError),
@@ -77,8 +75,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case "/probe":
-		enc := h.e(w)
-		err := enc.Encode(&MsgProbeResp{Active: h.b.IsActive()})
+		err := h.e(w).Encode(&MsgProbeResp{Active: h.b.IsActive()})
 		if err != nil {
 			http.Error(w,
 				http.StatusText(http.StatusInternalServerError),
