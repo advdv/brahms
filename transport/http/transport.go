@@ -80,10 +80,10 @@ func (tr *Transport) Pull(ctx context.Context, c chan<- brahms.View, from brahms
 }
 
 // Probe implements node status probing
-func (tr *Transport) Probe(ctx context.Context, c chan<- int, idx int, n brahms.Node) {
+func (tr *Transport) Probe(ctx context.Context, c chan<- brahms.NID, id brahms.NID, n brahms.Node) {
 	msg := new(MsgProbeResp)
 	tr.RequestOrLog(ctx, http.MethodGet, n, "/probe", nil, msg)
 	if msg.Active {
-		c <- idx
+		c <- id
 	}
 }

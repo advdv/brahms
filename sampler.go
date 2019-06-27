@@ -12,7 +12,7 @@ import (
 
 // Prober allows for probing peers to determine if they are still online
 type Prober interface {
-	Probe(ctx context.Context, c chan<- int, idx int, n Node)
+	Probe(ctx context.Context, c chan<- NID, id NID, n Node)
 }
 
 // Sampler holds a sample from a node stream such that it is not biased by the
@@ -21,6 +21,7 @@ type Sampler struct {
 	seeds  []uint64
 	mins   []uint64
 	sample []Node
+
 	prober Prober
 	mu     sync.RWMutex
 }
@@ -44,53 +45,49 @@ func NewSampler(rnd *rand.Rand, l2 int, pr Prober) (s *Sampler) {
 
 // Validate if the currently sampled nodes are still alive
 func (s *Sampler) Validate(to time.Duration) {
-	probes := make(chan int, len(s.sample))
+	sample := s.Sample()
+	probes := make(chan NID, len(sample))
+
+	// @TODO keep a recently evicted map that resets after n new validations
+	// @TODO probe only an unpredictable subset every call
 
 	func() {
 		ctx, cancel := context.WithTimeout(context.Background(), to)
 		defer cancel()
 
 		// probe all currently sampled nodes
-		s.mu.RLock()
-
-		//@TODO we may have a lot of duplicates sample, one probe would be enough
-		//for that purpose
-		for i, n := range s.sample {
-			if n.IsZero() {
-				probes <- i
-				continue
-			}
-
-			go s.prober.Probe(ctx, probes, i, n)
+		for id, n := range sample {
+			go s.prober.Probe(ctx, probes, id, n)
 		}
-		s.mu.RUnlock()
 
 		// wait for timeout
 		<-ctx.Done()
 	}()
 
 	//read the indexes of all probes that returned a response
-	alive := map[int]struct{}{}
+	alive := map[NID]struct{}{}
 DRAIN:
 	for {
 		select {
-		case i := <-probes:
-			alive[i] = struct{}{}
+		case id := <-probes:
+			alive[id] = struct{}{}
 		default:
 			break DRAIN
 		}
 	}
 
 	s.mu.Lock()
-	for i := range s.sample {
-		if _, ok := alive[i]; ok {
-			continue //this sample replied
+	for i, n := range s.sample {
+		id := n.Hash()
+		if _, ok := sample[id]; !ok {
+			continue //node was not probed, keep it for now
 		}
 
-		// reset the sample otherwise. NOTE: there is a race condition here since it
-		// is possible that the node that is underneath this index has changed to
-		// another node at the time the probe returns. This is ok since we wanted to
-		// replace it anyway and this will happen soon enough after this delete.
+		if _, ok := alive[id]; ok {
+			continue //this sample replied to the probe
+		}
+
+		// reset the sample otherwise and mark as evicted
 		s.sample[i] = Node{}
 		s.mins[i] = math.MaxUint64
 	}

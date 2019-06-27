@@ -24,9 +24,11 @@ This is an experimental implementation of [Brahms: Byzantine resilient random me
 - [x] (fix) remove readView lock contention
 - [x] (fix) pull easily runs into deadline exceeded
 - [ ] (fix) in 3 node network, removing the first causes others to not remove from view
-- [ ] (fix) make sure its not possible for others to push others node's "self" info
-- [ ] refactor probing to not probe double samples
+-     [ ] add a "recentlyEvicted" call to the sampler such that it can tell the
+          brahms algorithm to ignore any pulls of that node
+- [x] refactor probing to not probe double samples
 - [ ] probe only a part of the sampled nodes at a time
+- [ ] (fix) make sure its not possible for others to push others node's "self" info
 - [ ] implement a limited push with a small proof of work
 - [ ] adjust l1 and l2 as the network grobs using an esimate as described [here](https://research.neustar.biz/2012/07/09/sketch-of-the-day-k-minimum-values/)
 - [ ] use the crypto hash for node hashing also for sampling instead of farm hash

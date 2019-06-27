@@ -35,8 +35,8 @@ func (t *MockTransport) DidPush(id brahms.NID) (ok bool) {
 }
 
 // Probe implements probe
-func (t *MockTransport) Probe(ctx context.Context, c chan<- int, i int, n brahms.Node) {
-	c <- i
+func (t *MockTransport) Probe(ctx context.Context, c chan<- brahms.NID, id brahms.NID, n brahms.Node) {
+	c <- id
 }
 
 // Push implements a push

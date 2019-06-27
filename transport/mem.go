@@ -29,7 +29,7 @@ func (t *MemNetTransport) AddCore(c *brahms.Core) {
 }
 
 // Probe implements probe
-func (t *MemNetTransport) Probe(ctx context.Context, cc chan<- int, i int, n brahms.Node) {
+func (t *MemNetTransport) Probe(ctx context.Context, cc chan<- brahms.NID, id brahms.NID, n brahms.Node) {
 	t.mu.RLock()
 	c, ok := t.cores[n.Hash()]
 	if !ok {
@@ -38,7 +38,7 @@ func (t *MemNetTransport) Probe(ctx context.Context, cc chan<- int, i int, n bra
 
 	t.mu.RUnlock()
 	if c.IsActive() {
-		cc <- i
+		cc <- id
 	}
 }
 

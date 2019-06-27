@@ -38,13 +38,13 @@ func TestNetCoreTranport(t *testing.T) {
 				t.Errorf("The code did not panic")
 			}
 		}()
-		tr.Probe(nil, nil, 1, *n2)
+		tr.Probe(nil, nil, brahms.NID{0x02}, *n2)
 	})
 }
 
 func TestMockTransportProbe(t *testing.T) {
 	tr := NewMockTransport()
-	c := make(chan int, 1)
-	tr.Probe(context.Background(), c, 1, brahms.Node{})
-	test.Equals(t, 1, <-c)
+	c := make(chan brahms.NID, 1)
+	tr.Probe(context.Background(), c, brahms.NID{0x01}, brahms.Node{})
+	test.Equals(t, brahms.NID{0x01}, <-c)
 }

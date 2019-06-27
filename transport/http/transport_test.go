@@ -66,15 +66,15 @@ func TestTransport(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
-		c := make(chan int, 1)
-		tr.Probe(ctx, c, 1, *brahms.N(host, uint16(port)))
+		c := make(chan brahms.NID, 1)
+		tr.Probe(ctx, c, brahms.NID{0x01}, *brahms.N(host, uint16(port)))
 		tr.Push(ctx, *brahms.N("127.0.0.1", 9090), *brahms.N(host, uint16(port)))
 
 		select {
 		case <-time.After(time.Second):
 			t.Fatal("took too long")
 		case i := <-c:
-			test.Equals(t, 1, i)
+			test.Equals(t, brahms.NID{0x01}, i)
 			test.Equals(t, 1, len(b.pushes))
 			test.Equals(t, net.ParseIP("127.0.0.1"), b.pushes[0].IP)
 			test.Equals(t, uint16(9090), b.pushes[0].Port)

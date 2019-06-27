@@ -13,7 +13,7 @@ import (
 
 func TestBrahmsNoReply(t *testing.T) {
 	n1 := brahms.N("127.0.0.1", 1)
-	pr := proberFunc(func(ctx context.Context, c chan<- int, i int, n brahms.Node) {})
+	pr := proberFunc(func(ctx context.Context, c chan<- brahms.NID, i brahms.NID, n brahms.Node) {})
 
 	p, _ := brahms.NewParams(0.1, 0.7, 0.2, 10, 2)
 	r := rand.New(rand.NewSource(0))
@@ -45,7 +45,7 @@ func TestBrahmsWithJustPushes(t *testing.T) {
 
 	p, _ := brahms.NewParams(0.1, 0.7, 0.2, 10, 2)
 	r := rand.New(rand.NewSource(1))
-	pr := proberFunc(func(ctx context.Context, c chan<- int, i int, n brahms.Node) {})
+	pr := proberFunc(func(ctx context.Context, c chan<- brahms.NID, id brahms.NID, n brahms.Node) {})
 	s := brahms.NewSampler(r, p.L2(), pr)
 	self := n1
 
@@ -82,7 +82,7 @@ func TestBrahmsWithPullsAndPushes(t *testing.T) {
 
 	p, _ := brahms.NewParams(0.1, 0.7, 0.2, 10, 4)
 	r := rand.New(rand.NewSource(1))
-	pr := proberFunc(func(ctx context.Context, c chan<- int, i int, n brahms.Node) {})
+	pr := proberFunc(func(ctx context.Context, c chan<- brahms.NID, i brahms.NID, n brahms.Node) {})
 	s := brahms.NewSampler(r, p.L2(), pr)
 	self := n1
 	other := n2

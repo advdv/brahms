@@ -26,8 +26,8 @@ type Agent struct {
 	params    brahms.P
 	done      chan struct{}
 	timeouts  struct {
-		validation time.Duration
-		update     time.Duration
+		validate time.Duration
+		update   time.Duration
 	}
 }
 
@@ -39,7 +39,7 @@ func New(logw io.Writer, cfg *Config) (a *Agent, err error) {
 		done:   make(chan struct{}),
 	}
 
-	a.timeouts.validation = cfg.ValidationTimeout
+	a.timeouts.validate = cfg.ValidateTimeout
 	a.timeouts.update = cfg.UpdateTimeout
 
 	a.listener, err = net.Listen("tcp", cfg.ListenAddr.String()+":"+strconv.Itoa(int(cfg.ListenPort)))
@@ -69,7 +69,7 @@ func (a *Agent) Self() brahms.Node {
 func (a *Agent) Join(v brahms.View) {
 	//@TODO setup a crypto rand
 
-	a.core = brahms.NewCore(rand.New(rand.NewSource(1)), a.self, v, a.params, a.transport)
+	a.core = brahms.NewCore(rand.New(rand.NewSource(time.Now().UnixNano())), a.self, v, a.params, a.transport)
 	a.handler = httpt.NewHandler(a.core)
 	a.server = &http.Server{
 		Handler: a.handler,
@@ -91,7 +91,7 @@ func (a *Agent) Join(v brahms.View) {
 		var i int
 		for {
 			a.core.UpdateView(a.timeouts.update)
-			a.core.ValidateSample(a.timeouts.validation)
+			a.core.ValidateSample(a.timeouts.validate)
 
 			a.logs.Printf("%.5d[%s] view%s sample%s", i, a.self, a.core.ReadView(), a.core.Sample())
 

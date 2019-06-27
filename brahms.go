@@ -64,6 +64,12 @@ PULL_DRAIN:
 					continue //ignore ourselves if we appear in a pull
 				}
 
+				// @TODO ignore nodes that we ourselves recently observed as
+				// unresponsive by our own probes.
+				// if s.IsEvicted(id) {
+				// 	continue //ignore earlier evicted nodes
+				// }
+
 				pull[id] = n
 			}
 		default:

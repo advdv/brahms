@@ -23,12 +23,27 @@ func TestNodeCreation(t *testing.T) {
 func TestNodeHashing(t *testing.T) {
 	n := Node{}
 	test.Equals(t, true, n.IsZero())
-
 	test.Equals(t, "96a2", n.Hash().String())
+
+	n = Node{}
 	n.IP = net.ParseIP("127.0.0.1")
 	test.Equals(t, "53e7", n.Hash().String())
-	n.Port = 1
-	test.Equals(t, "df8a", n.Hash().String())
 
+	n = Node{}
+	n.Port = 1
+	test.Equals(t, "b413", n.Hash().String())
 	test.Equals(t, false, n.IsZero())
+}
+
+var rid NID
+
+func BenchmarkNodeHashing(b *testing.B) {
+	var id NID
+
+	n := N("127.0.0.1", 11000)
+	for i := 0; i < b.N; i++ {
+		id = n.Hash() //~253ns
+	}
+
+	rid = id
 }

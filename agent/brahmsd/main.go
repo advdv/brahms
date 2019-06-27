@@ -23,6 +23,9 @@ func main() {
 		cfg.ListenPort = uint16(port)
 	}
 
+	cfg.UpdateTimeout = time.Second * 1
+	cfg.ValidateTimeout = time.Second * 1
+
 	a, err := agent.New(os.Stderr, cfg)
 	if err != nil {
 		panic(err)

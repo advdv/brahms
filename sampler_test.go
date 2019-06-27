@@ -10,13 +10,15 @@ import (
 	"github.com/advanderveer/go-test"
 )
 
-type proberFunc func(ctx context.Context, c chan<- int, i int, n brahms.Node)
+type proberFunc func(ctx context.Context, c chan<- brahms.NID, id brahms.NID, n brahms.Node)
 
-func (pr proberFunc) Probe(ctx context.Context, c chan<- int, i int, n brahms.Node) { pr(ctx, c, i, n) }
+func (pr proberFunc) Probe(ctx context.Context, c chan<- brahms.NID, i brahms.NID, n brahms.Node) {
+	pr(ctx, c, i, n)
+}
 
 func TestSampler(t *testing.T) {
 	r := rand.New(rand.NewSource(3))
-	pr := proberFunc(func(ctx context.Context, c chan<- int, i int, n brahms.Node) { c <- i })
+	pr := proberFunc(func(ctx context.Context, c chan<- brahms.NID, id brahms.NID, n brahms.Node) { c <- id })
 	s := brahms.NewSampler(r, 10, pr)
 
 	t.Run("empty sampler should return empty view as sample", func(t *testing.T) {
@@ -57,7 +59,7 @@ func TestSamplerValidation(t *testing.T) {
 	n3 := brahms.N("127.0.0.1", 3)
 	n4 := brahms.N("127.0.0.1", 4)
 
-	pr := proberFunc(func(ctx context.Context, c chan<- int, i int, n brahms.Node) {
+	pr := proberFunc(func(ctx context.Context, c chan<- brahms.NID, id brahms.NID, n brahms.Node) {
 		if n.IsZero() {
 			t.Fatalf("probe func called with zero node")
 		}
@@ -66,7 +68,7 @@ func TestSamplerValidation(t *testing.T) {
 			return //n3 doesn't respond
 		}
 
-		c <- i
+		c <- id
 	})
 
 	r := rand.New(rand.NewSource(3))
