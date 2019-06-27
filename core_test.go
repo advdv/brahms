@@ -59,12 +59,6 @@ func TestMiniNetCore(t *testing.T) {
 	test.Equals(t, brahms.NewView(), c1.Sample())
 }
 
-func TestNetworkJoin(t *testing.T) {
-	//@TODO test how a member would join an existing network by knowing just one
-	//other node in the network. A single push without a pull would not be taken
-	//into account currently. Is that a real problem in an actual network?
-}
-
 func TestLargerNetwork(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
@@ -77,6 +71,7 @@ func TestLargerNetwork(t *testing.T) {
 	td := 15
 	d := 0.05
 	nd := int(math.Round(float64(n) * d))
+	nn := 5
 
 	m := 1.0
 	l := int(math.Round(m * math.Pow(float64(n), 1.0/3)))
@@ -110,12 +105,17 @@ func TestLargerNetwork(t *testing.T) {
 		if !testing.Short() && (5&i == 0 || i == td || i == td+1) {
 			views := make(map[*brahms.Node]brahms.View, len(cores))
 			dead := make(map[brahms.NID]struct{})
-			for _, c := range cores {
+			joins := make(map[brahms.NID]struct{})
+			for i, c := range cores {
 				cn := c.Self()
 				views[cn] = c.Sample()
 
 				if !c.IsActive() {
 					dead[cn.Hash()] = struct{}{}
+				}
+
+				if i >= int(n) {
+					joins[cn.Hash()] = struct{}{}
 				}
 			}
 
@@ -124,7 +124,7 @@ func TestLargerNetwork(t *testing.T) {
 				defer wg.Done()
 
 				buf := bytes.NewBuffer(nil)
-				draw(t, buf, views, dead)
+				draw(t, buf, views, dead, joins)
 				drawPNG(t, buf, fmt.Sprintf(filepath.Join("_draws", "network_%d.png"), i))
 				fmt.Println("drawing step '", i, "'...")
 
@@ -151,12 +151,22 @@ func TestLargerNetwork(t *testing.T) {
 			wg.Wait()
 		}
 
-		// after some time turn off some cores
+		// after some time turn off some cores, and add new ones
 		if i == td {
 			for i := 0; i < nd; i++ {
 				idx := r.Intn(len(cores))
 				cores[idx].Deactivate()
 				deactivated[cores[idx].Self().Hash()] = struct{}{}
+			}
+
+			// add new cores
+			for i := len(cores) + 1; i <= int(n)+nn; i++ {
+				self := brahms.N("127.0.0.1", uint16(i))
+				other := brahms.N("127.0.0.1", uint16(r.Intn(int(n))))
+
+				c := brahms.NewCore(r, self, brahms.NewView(other), p, tr)
+				tr.AddCore(c)
+				cores = append(cores, c)
 			}
 		}
 
@@ -165,7 +175,7 @@ func TestLargerNetwork(t *testing.T) {
 			s := cores[0].Sample()
 			if !reflect.DeepEqual(s, lastSample) {
 				diff := s.Diff(lastSample)
-				if len(diff) > 1 {
+				if len(diff) > 2 {
 					t.Fatalf("observed a significant sample change at %d, new nodes: %s", i, diff)
 				}
 			}
