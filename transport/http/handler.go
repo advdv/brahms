@@ -1,6 +1,7 @@
 package httpt
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 
@@ -31,9 +32,17 @@ type Handler struct {
 	d func(r io.Reader) Decoder
 }
 
-// NewHandler initates a new handler
-func NewHandler(b Brahms, enc func(r io.Writer) Encoder, dec func(r io.Reader) Decoder) *Handler {
+// NewHandlerWithEncoding initates a new handler with custom encoding
+func NewHandlerWithEncoding(b Brahms, enc func(r io.Writer) Encoder, dec func(r io.Reader) Decoder) *Handler {
 	return &Handler{b, enc, dec}
+}
+
+// NewHandler initates a new handler with default json encoding
+func NewHandler(b Brahms) *Handler {
+	return &Handler{b,
+		func(w io.Writer) Encoder { return json.NewEncoder(w) },
+		func(r io.Reader) Decoder { return json.NewDecoder(r) },
+	}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

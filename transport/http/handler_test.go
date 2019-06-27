@@ -27,10 +27,7 @@ func (b *mockBrahms) ReadView() brahms.View         { return brahms.NewView(brah
 
 func TestPushPullProbe(t *testing.T) {
 	b := &mockBrahms{}
-	s := httptest.NewServer(httpt.NewHandler(b,
-		func(w io.Writer) httpt.Encoder { return json.NewEncoder(w) },
-		func(r io.Reader) httpt.Decoder { return json.NewDecoder(r) },
-	))
+	s := httptest.NewServer(httpt.NewHandler(b))
 	defer s.Close()
 
 	t.Run("404 not found", func(t *testing.T) {
@@ -96,7 +93,7 @@ func (f encoderFunc) Encode(v interface{}) error { return f(v) }
 
 func TestEncodingErrors(t *testing.T) {
 	b := &mockBrahms{}
-	s := httptest.NewServer(httpt.NewHandler(b,
+	s := httptest.NewServer(httpt.NewHandlerWithEncoding(b,
 		func(w io.Writer) httpt.Encoder {
 			return encoderFunc(func(v interface{}) error {
 				return errors.New("foo")

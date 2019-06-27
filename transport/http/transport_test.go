@@ -3,8 +3,6 @@ package httpt_test
 import (
 	"bytes"
 	"context"
-	"encoding/json"
-	"io"
 	"net"
 	"net/http/httptest"
 	"os"
@@ -22,10 +20,7 @@ var _ brahms.Transport = &httpt.Transport{}
 
 func TestTransportRequest(t *testing.T) {
 	b := &mockBrahms{}
-	s := httptest.NewServer(httpt.NewHandler(b,
-		func(w io.Writer) httpt.Encoder { return json.NewEncoder(w) },
-		func(r io.Reader) httpt.Decoder { return json.NewDecoder(r) },
-	))
+	s := httptest.NewServer(httpt.NewHandler(b))
 
 	defer s.Close()
 	host, ports, _ := net.SplitHostPort(s.Listener.Addr().String())
@@ -60,10 +55,7 @@ func TestTransportRequest(t *testing.T) {
 
 func TestTransport(t *testing.T) {
 	b := &mockBrahms{}
-	s := httptest.NewServer(httpt.NewHandler(b,
-		func(w io.Writer) httpt.Encoder { return json.NewEncoder(w) },
-		func(r io.Reader) httpt.Decoder { return json.NewDecoder(r) },
-	))
+	s := httptest.NewServer(httpt.NewHandler(b))
 
 	defer s.Close()
 	host, ports, _ := net.SplitHostPort(s.Listener.Addr().String())
