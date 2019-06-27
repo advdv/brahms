@@ -40,9 +40,9 @@ func New(logw io.Writer, cfg *Config) (a *Agent, err error) {
 		return nil, Err{err, "listen"}
 	}
 
-	a.self = &brahms.Node{IP: cfg.AdvertiseAddr, Port: cfg.AdvertisePort}
+	a.self = brahms.N(cfg.AdvertiseAddr.String(), cfg.AdvertisePort)
 	if a.self.IP == nil {
-		a.self.IP = a.listener.Addr().(*net.TCPAddr).IP
+		a.self.IP = net.ParseIP(a.listener.Addr().(*net.TCPAddr).IP.String())
 	}
 
 	if a.self.Port == 0 {
@@ -81,10 +81,14 @@ func (a *Agent) Join(v brahms.View) {
 
 	// start the protocol loop
 	go func() {
+		var i int
 		for {
 			a.core.UpdateView(100 * time.Millisecond)
 			a.core.ValidateSample(200 * time.Millisecond)
 
+			a.logs.Printf("%.5d[%s] view%s sample%s", i, a.self, a.core.ReadView(), a.core.Sample())
+
+			i++
 			select {
 			case <-a.done:
 				a.done <- struct{}{}
@@ -97,6 +101,11 @@ func (a *Agent) Join(v brahms.View) {
 
 // Shutdown attempts to close the agent gracefully
 func (a *Agent) Shutdown(ctx context.Context) (err error) {
+	if a.core == nil {
+		//@TODO only shutdown the listener
+		return a.listener.Close()
+	}
+
 	a.core.Deactivate()
 	//@TODO wait for the absense of incoming pulls/probes/pushes
 	a.done <- struct{}{}

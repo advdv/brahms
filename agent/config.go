@@ -23,6 +23,6 @@ func LocalTestConfig() (cfg *Config) {
 		ListenAddr: net.ParseIP("127.0.0.1"),
 		ListenPort: 0,
 	}
-	cfg.Params, _ = brahms.NewParams(0.45, 0.45, 0.1, 100, 100)
+	cfg.Params, _ = brahms.NewParams(0.45, 0.45, 0.1, 10, 10)
 	return
 }

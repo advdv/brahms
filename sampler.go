@@ -52,6 +52,9 @@ func (s *Sampler) Validate(to time.Duration) {
 
 		// probe all currently sampled nodes
 		s.mu.RLock()
+
+		//@TODO we may have a lot of duplicates sample, one probe would be enough
+		//for that purpose
 		for i, n := range s.sample {
 			if n.IsZero() {
 				continue

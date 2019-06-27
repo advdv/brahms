@@ -13,9 +13,14 @@ This is an experimental implementation of [Brahms: Byzantine resilient random me
   - [x] test for concurrent access
 - [x] fix bug that causes cores sample not to be stable over time
 - [x] fix big that cause some deactivated cores to linger in the sample of others
-- [ ] decide, use and test an actual network transport
+- [x] decide, use and test an actual network transport
+- [x] implement and test the agent
+- [x] create and test a command that runs the agent as a process
+- [x] (fix) bug that prevent the network to grow from 1 to 2
+- [x] test if nodes can succesfully join by just pushing there ID
+- [ ] (fix) leave of node causes peers to keep probing on real agent proc
+- [ ] refactor probing to not probe double samples
+- [ ] probe only a part of the sampled nodes at a time
 - [ ] implement a limited push with a small proof of work
-- [ ] test if nodes can succesfully join by just pushing there ID
 - [ ] adjust l1 and l2 as the network grobs using an esimate as described [here](https://research.neustar.biz/2012/07/09/sketch-of-the-day-k-minimum-values/)
 - [ ] use the crypto hash for node hashing also for sampling instead of farm hash
-- [ ] probe only a part of the sampled nodes at a time

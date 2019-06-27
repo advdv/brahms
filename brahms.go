@@ -69,7 +69,7 @@ PULL_DRAIN:
 	}
 
 	// only update our view if the nr of pushed ids was not too high (line 35)
-	if len(push) <= p.L1α() && len(push) > 0 && len(pull) > 0 {
+	if len(push) <= p.L1α() && (len(push) > 0 || len(pull) > 0) {
 
 		// construct our new view from what we've seen this round (line 36)
 		v = push.Pick(rnd, p.L1α()).

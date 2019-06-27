@@ -22,7 +22,7 @@ func drawPNG(t *testing.T, buf io.Reader, name string) {
 	test.Ok(t, cmd.Run())
 }
 
-func draw(t testing.TB, w io.Writer, views map[*brahms.Node]brahms.View, dead map[brahms.NID]struct{}) {
+func draw(t testing.TB, w io.Writer, views map[*brahms.Node]brahms.View, dead, joins map[brahms.NID]struct{}) {
 	fmt.Fprintln(w, `digraph {`)
 	fmt.Fprintln(w, `layout=neato;`)
 	fmt.Fprintln(w, `overlap=scalexy;`)
@@ -34,6 +34,8 @@ func draw(t testing.TB, w io.Writer, views map[*brahms.Node]brahms.View, dead ma
 
 		if _, ok := dead[id]; ok {
 			fmt.Fprintf(w, `,fillcolor="red"`)
+		} else if _, ok := joins[id]; ok {
+			fmt.Fprintf(w, `,fillcolor="blue"`)
 		} else {
 			fmt.Fprintf(w, `,fillcolor="#ffffff"`)
 		}

@@ -57,7 +57,7 @@ func TestBrahmsWithJustPushes(t *testing.T) {
 	// with just a pull response we do not update the view with just that info
 	v1 := brahms.Brahms(self, r, p, time.Millisecond*10, s, tr0, p0, v0)
 	test.Equals(t, 0, len(p0))
-	test.Equals(t, v0, v1)
+	test.Equals(t, brahms.NewView(n2), v1)
 
 	// but the pushed id should have been added to the sample
 	test.Equals(t, brahms.NewView(n2), s.Sample())
