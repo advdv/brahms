@@ -26,8 +26,9 @@ type Agent struct {
 	params    brahms.P
 	done      chan struct{}
 	timeouts  struct {
-		validate time.Duration
-		update   time.Duration
+		validate     time.Duration
+		update       time.Duration
+		invalidation time.Duration
 	}
 }
 
@@ -41,6 +42,7 @@ func New(logw io.Writer, cfg *Config) (a *Agent, err error) {
 
 	a.timeouts.validate = cfg.ValidateTimeout
 	a.timeouts.update = cfg.UpdateTimeout
+	a.timeouts.invalidation = cfg.InvalidationTimeout
 
 	a.listener, err = net.Listen("tcp", cfg.ListenAddr.String()+":"+strconv.Itoa(int(cfg.ListenPort)))
 	if err != nil {
@@ -68,8 +70,9 @@ func (a *Agent) Self() brahms.Node {
 // Join the network and starts the protocol
 func (a *Agent) Join(v brahms.View) {
 	//@TODO setup a crypto rand
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	a.core = brahms.NewCore(rand.New(rand.NewSource(time.Now().UnixNano())), a.self, v, a.params, a.transport)
+	a.core = brahms.NewCore(rnd, a.self, v, a.params, a.transport, a.timeouts.invalidation)
 	a.handler = httpt.NewHandler(a.core)
 	a.server = &http.Server{
 		Handler: a.handler,

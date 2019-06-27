@@ -15,8 +15,9 @@ type Config struct {
 	AdvertiseAddr net.IP
 	AdvertisePort uint16
 
-	ValidateTimeout time.Duration
-	UpdateTimeout   time.Duration
+	ValidateTimeout     time.Duration
+	UpdateTimeout       time.Duration
+	InvalidationTimeout time.Duration
 
 	Params brahms.P
 }
@@ -24,10 +25,11 @@ type Config struct {
 // LocalTestConfig returns a sensible default config for local testing
 func LocalTestConfig() (cfg *Config) {
 	cfg = &Config{
-		ListenAddr:      net.ParseIP("127.0.0.1"),
-		ListenPort:      0,
-		ValidateTimeout: time.Millisecond * 100,
-		UpdateTimeout:   time.Millisecond * 200,
+		ListenAddr:          net.ParseIP("127.0.0.1"),
+		ListenPort:          0,
+		ValidateTimeout:     time.Millisecond * 100,
+		UpdateTimeout:       time.Millisecond * 200,
+		InvalidationTimeout: time.Second * 5,
 	}
 	cfg.Params, _ = brahms.NewParams(0.45, 0.45, 0.1, 10, 10)
 	return

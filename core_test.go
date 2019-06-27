@@ -26,11 +26,11 @@ func TestMiniNetCore(t *testing.T) {
 
 	//create a mini network with three cores
 	tr := transport.NewMemNetTransport()
-	c1 := brahms.NewCore(rnd, n1, brahms.NewView(n2), prm, tr)
+	c1 := brahms.NewCore(rnd, n1, brahms.NewView(n2), prm, tr, time.Second)
 	tr.AddCore(c1)
-	c2 := brahms.NewCore(rnd, n2, brahms.NewView(n3), prm, tr)
+	c2 := brahms.NewCore(rnd, n2, brahms.NewView(n3), prm, tr, time.Second)
 	tr.AddCore(c2)
-	c3 := brahms.NewCore(rnd, n3, brahms.NewView(n1), prm, tr)
+	c3 := brahms.NewCore(rnd, n3, brahms.NewView(n1), prm, tr, time.Second)
 	tr.AddCore(c3)
 
 	// after two iterations we should have a connected graph
@@ -91,7 +91,7 @@ func TestLargerNetwork(t *testing.T) {
 			other = brahms.N("127.0.0.1", 1)
 		}
 
-		c := brahms.NewCore(r, self, brahms.NewView(other), p, tr)
+		c := brahms.NewCore(r, self, brahms.NewView(other), p, tr, time.Second)
 		tr.AddCore(c)
 		cores = append(cores, c)
 	}
@@ -168,7 +168,7 @@ func TestLargerNetwork(t *testing.T) {
 				//are inactive, which causes the test to fail
 				other := brahms.N("127.0.0.1", uint16(r.Intn(int(n))))
 
-				c := brahms.NewCore(r, self, brahms.NewView(other), p, tr)
+				c := brahms.NewCore(r, self, brahms.NewView(other), p, tr, time.Second)
 				tr.AddCore(c)
 				cores = append(cores, c)
 			}

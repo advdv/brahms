@@ -17,7 +17,7 @@ func TestBrahmsNoReply(t *testing.T) {
 
 	p, _ := brahms.NewParams(0.1, 0.7, 0.2, 10, 2)
 	r := rand.New(rand.NewSource(0))
-	s := brahms.NewSampler(r, p.L2(), pr)
+	s := brahms.NewSampler(r, p.L2(), pr, time.Second)
 	self := n1
 
 	p0 := make(chan brahms.Node)
@@ -46,11 +46,12 @@ func TestBrahmsWithJustPushes(t *testing.T) {
 	p, _ := brahms.NewParams(0.1, 0.7, 0.2, 10, 2)
 	r := rand.New(rand.NewSource(1))
 	pr := proberFunc(func(ctx context.Context, c chan<- brahms.NID, id brahms.NID, n brahms.Node) {})
-	s := brahms.NewSampler(r, p.L2(), pr)
+	s := brahms.NewSampler(r, p.L2(), pr, time.Second)
 	self := n1
 
 	p0 := make(chan brahms.Node, 10)
 	p0 <- *n2
+	p0 <- *self //pushing ourself should be ignored
 	v0 := brahms.NewView(n1)
 	tr0 := transport.NewMockTransport()
 
@@ -79,23 +80,28 @@ func TestBrahmsWithPullsAndPushes(t *testing.T) {
 	n2 := brahms.N("127.0.0.1", 2)
 	n3 := brahms.N("127.0.0.1", 3)
 	n4 := brahms.N("127.0.0.1", 4)
+	n5 := brahms.N("127.0.0.1", 5)
 
 	p, _ := brahms.NewParams(0.1, 0.7, 0.2, 10, 4)
 	r := rand.New(rand.NewSource(1))
 	pr := proberFunc(func(ctx context.Context, c chan<- brahms.NID, i brahms.NID, n brahms.Node) {})
-	s := brahms.NewSampler(r, p.L2(), pr)
+	s := brahms.NewSampler(r, p.L2(), pr, time.Second)
+
+	// sample n5, then probe it to recently invalidate it
+	s.Update(brahms.NewView(n5))
+	s.Validate(time.Millisecond * 5)
+
 	self := n1
 	other := n2
-
 	v0 := brahms.NewView(other)
 	p0 := make(chan brahms.Node, 10)
 	p0 <- *n4
 	tr0 := transport.NewMockTransport()
-	tr0.SetPull(other.Hash(), brahms.NewView(n3, n3, self))
+	tr0.SetPull(other.Hash(), brahms.NewView(n3, n3, n5, self))
 
-	//with both pushes and pulls the view should get updated
+	// with both pushes and pulls the view should get updated.
+	// should ignore self and n5, the latter because it was recently invalidated
 	v1 := brahms.Brahms(self, r, p, time.Millisecond*10, s, tr0, p0, v0)
-
 	test.Equals(t, brahms.NewView(n3, n4), v1)
 	test.Equals(t, brahms.NewView(n3, n4), s.Sample())
 }

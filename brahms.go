@@ -45,10 +45,12 @@ PUSH_DRAIN:
 	for {
 		select {
 		case n := <-pushes:
-			//@TODO test the case in which a peer pushes node info that corresponds
-			//to ourselves.
+			id := n.Hash()
+			if id == self.Hash() {
+				continue //ignore ourselves if someone adds ourself to a push
+			}
 
-			push[n.Hash()] = n
+			push[id] = n
 		default:
 			break PUSH_DRAIN
 		}
@@ -64,11 +66,13 @@ PULL_DRAIN:
 					continue //ignore ourselves if we appear in a pull
 				}
 
-				// @TODO ignore nodes that we ourselves recently observed as
-				// unresponsive by our own probes.
-				// if s.IsEvicted(id) {
-				// 	continue //ignore earlier evicted nodes
-				// }
+				// NOTE: We divert here from the paper by keeping track of recently
+				// invalidated nodes (by them not responding to probes) and these
+				// during pulls. This way nodes won't be keeping invalid nodes by
+				// swapping them with each other indefintely
+				if s.RecentlyInvalidated(id) {
+					continue //recently invalidated, don't consider interesting
+				}
 
 				pull[id] = n
 			}
@@ -78,7 +82,7 @@ PULL_DRAIN:
 	}
 
 	// only update our view if the nr of pushed ids was not too high (line 35)
-	// NOTE: we divert from the paper here, we (re)set the view always event if
+	// NOTE: we divert from the paper here: we (re)set the view always event if
 	// pushes and pulls are empty. Else non-responding peers in the view would
 	// never reset in small networks
 	if len(push) <= p.L1α() {

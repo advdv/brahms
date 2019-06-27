@@ -19,7 +19,7 @@ func (pr proberFunc) Probe(ctx context.Context, c chan<- brahms.NID, i brahms.NI
 func TestSampler(t *testing.T) {
 	r := rand.New(rand.NewSource(3))
 	pr := proberFunc(func(ctx context.Context, c chan<- brahms.NID, id brahms.NID, n brahms.Node) { c <- id })
-	s := brahms.NewSampler(r, 10, pr)
+	s := brahms.NewSampler(r, 10, pr, time.Second)
 
 	t.Run("empty sampler should return empty view as sample", func(t *testing.T) {
 		test.Equals(t, brahms.View{}, s.Sample())
@@ -72,12 +72,21 @@ func TestSamplerValidation(t *testing.T) {
 	})
 
 	r := rand.New(rand.NewSource(3))
-	s := brahms.NewSampler(r, 15, pr)
+	s := brahms.NewSampler(r, 15, pr, time.Millisecond*10)
 	s.Validate(time.Millisecond)
 
 	s.Update(brahms.NewView(n1, n2, n3, n4))
 	test.Equals(t, brahms.NewView(n1, n2, n3, n4), s.Sample())
+	test.Equals(t, false, s.RecentlyInvalidated(n3.Hash()))
 
 	s.Validate(time.Millisecond)
 	test.Equals(t, brahms.NewView(n1, n2, n4), s.Sample()) //n3 was reset
+	test.Equals(t, true, s.RecentlyInvalidated(n3.Hash()))
+	test.Equals(t, false, s.RecentlyInvalidated(n1.Hash()))
+
+	s.Validate(time.Millisecond) //should still be recently invaidated
+	test.Equals(t, true, s.RecentlyInvalidated(n3.Hash()))
+
+	s.Validate(time.Millisecond * 10) //should expire the invalidation
+	test.Equals(t, false, s.RecentlyInvalidated(n3.Hash()))
 }

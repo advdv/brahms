@@ -20,12 +20,12 @@ type Core struct {
 }
 
 // NewCore initializes the core
-func NewCore(rnd *rand.Rand, self *Node, v0 View, p P, tr Transport) (c *Core) {
+func NewCore(rnd *rand.Rand, self *Node, v0 View, p P, tr Transport, ito time.Duration) (c *Core) {
 	c = &Core{
 		self:    self,
 		pushes:  make(chan Node, p.L1α()+10), // slightly larger then what the algorithm accepts
 		params:  p,
-		sampler: NewSampler(rnd, p.L2(), tr),
+		sampler: NewSampler(rnd, p.L2(), tr, ito),
 		tr:      tr,
 		rnd:     rnd,
 

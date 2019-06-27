@@ -18,21 +18,25 @@ type Prober interface {
 // Sampler holds a sample from a node stream such that it is not biased by the
 // nr of times a appears in the stream.
 type Sampler struct {
-	seeds  []uint64
-	mins   []uint64
-	sample []Node
+	seeds   []uint64
+	mins    []uint64
+	sample  []Node
+	invalid map[NID]time.Time
 
+	ito    time.Duration
 	prober Prober
 	mu     sync.RWMutex
 }
 
 // NewSampler initializes a sampler with the provided source of randomness
-func NewSampler(rnd *rand.Rand, l2 int, pr Prober) (s *Sampler) {
+func NewSampler(rnd *rand.Rand, l2 int, pr Prober, ito time.Duration) (s *Sampler) {
 	s = &Sampler{
-		mins:   make([]uint64, l2),
-		sample: make([]Node, l2),
-		seeds:  make([]uint64, l2),
-		prober: pr,
+		mins:    make([]uint64, l2),
+		sample:  make([]Node, l2),
+		seeds:   make([]uint64, l2),
+		invalid: make(map[NID]time.Time),
+		ito:     ito,
+		prober:  pr,
 	}
 
 	for i := 0; i < l2; i++ {
@@ -48,7 +52,6 @@ func (s *Sampler) Validate(to time.Duration) {
 	sample := s.Sample()
 	probes := make(chan NID, len(sample))
 
-	// @TODO keep a recently evicted map that resets after n new validations
 	// @TODO probe only an unpredictable subset every call
 
 	func() {
@@ -76,6 +79,7 @@ DRAIN:
 		}
 	}
 
+	// remove any sample that didn't respond (in time) to the probe
 	s.mu.Lock()
 	for i, n := range s.sample {
 		id := n.Hash()
@@ -84,13 +88,25 @@ DRAIN:
 		}
 
 		if _, ok := alive[id]; ok {
-			continue //this sample replied to the probe
+			continue //this sample replied to the probe, keep it
 		}
 
-		// reset the sample otherwise and mark as evicted
+		// reset the sample otherwise and mark as invalidated
+		s.invalid[id] = time.Now()
 		s.sample[i] = Node{}
 		s.mins[i] = math.MaxUint64
 	}
+
+	// clear old invalidated nodes
+	for id, t := range s.invalid {
+		if time.Now().Sub(t) < s.ito {
+			continue //still fresh
+		}
+
+		//eviction expired
+		delete(s.invalid, id)
+	}
+
 	s.mu.Unlock()
 }
 
@@ -143,4 +159,13 @@ func (s *Sampler) Clear() {
 	}
 
 	s.sample = make([]Node, len(s.mins))
+}
+
+// RecentlyInvalidated returns whether a given node was recently invalidated
+// due to a failing probe
+func (s *Sampler) RecentlyInvalidated(id NID) (ok bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	_, ok = s.invalid[id]
+	return
 }
