@@ -125,7 +125,7 @@ func TestLargerNetwork(t *testing.T) {
 
 				buf := bytes.NewBuffer(nil)
 				draw(t, buf, views, dead)
-				drawPNG(t, buf, fmt.Sprintf(filepath.Join("draws", "network_%d.png"), i))
+				drawPNG(t, buf, fmt.Sprintf(filepath.Join("_draws", "network_%d.png"), i))
 				fmt.Println("drawing step '", i, "'...")
 
 			}(i, views)
@@ -188,7 +188,5 @@ func TestLargerNetwork(t *testing.T) {
 
 	wg.Wait() //wait for drawings
 
-	// @TODO assert that no-one connects to the in-active cores anymore
-	// @TODO assert that the rest is still connected, sometimes not above  3.1?
 	test.Assert(t, tot/float64(len(cores)) >= 3.0, fmt.Sprintf("should be reasonably connected, avg is: %f", tot/float64(len(cores))))
 }
