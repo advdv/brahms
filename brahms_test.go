@@ -16,7 +16,7 @@ func TestBrahmsNoReply(t *testing.T) {
 	pr := proberFunc(func(ctx context.Context, c chan<- int, i int, n brahms.Node) {})
 
 	p, _ := brahms.NewParams(0.1, 0.7, 0.2, 10, 2)
-	r := rand.New(rand.NewSource(1))
+	r := rand.New(rand.NewSource(0))
 	s := brahms.NewSampler(r, p.L2(), pr)
 	self := n1
 
@@ -26,8 +26,8 @@ func TestBrahmsNoReply(t *testing.T) {
 
 	v1 := brahms.Brahms(self, r, p, time.Millisecond*10, s, tr0, p0, v0)
 
-	//view should be unchanged transport returned nothing
-	test.Equals(t, v0, v1)
+	//view should be reset if transport returned nothing and sampler is empty
+	test.Equals(t, brahms.NewView(), v1)
 
 	//should have pushed our own nid
 	test.Equals(t, true, tr0.DidPush(self.Hash()))

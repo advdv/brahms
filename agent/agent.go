@@ -25,6 +25,10 @@ type Agent struct {
 	server    *http.Server
 	params    brahms.P
 	done      chan struct{}
+	timeouts  struct {
+		validation time.Duration
+		update     time.Duration
+	}
 }
 
 // New initializes the agent
@@ -34,6 +38,9 @@ func New(logw io.Writer, cfg *Config) (a *Agent, err error) {
 		params: cfg.Params,
 		done:   make(chan struct{}),
 	}
+
+	a.timeouts.validation = cfg.ValidationTimeout
+	a.timeouts.update = cfg.UpdateTimeout
 
 	a.listener, err = net.Listen("tcp", cfg.ListenAddr.String()+":"+strconv.Itoa(int(cfg.ListenPort)))
 	if err != nil {
@@ -83,8 +90,8 @@ func (a *Agent) Join(v brahms.View) {
 	go func() {
 		var i int
 		for {
-			a.core.UpdateView(100 * time.Millisecond)
-			a.core.ValidateSample(200 * time.Millisecond)
+			a.core.UpdateView(a.timeouts.update)
+			a.core.ValidateSample(a.timeouts.validation)
 
 			a.logs.Printf("%.5d[%s] view%s sample%s", i, a.self, a.core.ReadView(), a.core.Sample())
 

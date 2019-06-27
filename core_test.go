@@ -189,7 +189,7 @@ func TestLargerNetwork(t *testing.T) {
 
 	var tot float64
 	for i, c := range cores {
-		tot += float64(len(c.ReadView()))
+		tot += float64(len(c.Sample()))
 
 		// check that none of the cores still remember the deactivated cores
 		for k, _ := range c.Sample() {
@@ -200,6 +200,9 @@ func TestLargerNetwork(t *testing.T) {
 	}
 
 	wg.Wait() //wait for drawings
+
+	// @TODO the average nr of cores in the view get suspiciously low
+	// @TODO sometimes deactivated cores are still in a sample (probing)
 
 	test.Assert(t, tot/float64(len(cores)) >= 2.6, fmt.Sprintf("should be reasonably connected, avg is: %f", tot/float64(len(cores))))
 }

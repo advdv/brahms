@@ -45,6 +45,9 @@ PUSH_DRAIN:
 	for {
 		select {
 		case n := <-pushes:
+			//@TODO test the case in which a peer pushes node info that corresponds
+			//to ourselves.
+
 			push[n.Hash()] = n
 		default:
 			break PUSH_DRAIN
@@ -69,7 +72,10 @@ PULL_DRAIN:
 	}
 
 	// only update our view if the nr of pushed ids was not too high (line 35)
-	if len(push) <= p.L1α() && (len(push) > 0 || len(pull) > 0) {
+	// NOTE: we divert from the paper here, we (re)set the view always event if
+	// pushes and pulls are empty. Else non-responding peers in the view would
+	// never reset in small networks
+	if len(push) <= p.L1α() {
 
 		// construct our new view from what we've seen this round (line 36)
 		v = push.Pick(rnd, p.L1α()).

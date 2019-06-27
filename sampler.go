@@ -57,6 +57,7 @@ func (s *Sampler) Validate(to time.Duration) {
 		//for that purpose
 		for i, n := range s.sample {
 			if n.IsZero() {
+				probes <- i
 				continue
 			}
 

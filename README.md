@@ -18,9 +18,20 @@ This is an experimental implementation of [Brahms: Byzantine resilient random me
 - [x] create and test a command that runs the agent as a process
 - [x] (fix) bug that prevent the network to grow from 1 to 2
 - [x] test if nodes can succesfully join by just pushing there ID
-- [ ] (fix) leave of node causes peers to keep probing on real agent proc
+- [x] (fix) leave of node causes peers to keep probing on real agent proc
+- [x] make validation and update timeouts configurable
+- [ ] (fix) pull easily runs into deadline exceeded
 - [ ] refactor probing to not probe double samples
 - [ ] probe only a part of the sampled nodes at a time
 - [ ] implement a limited push with a small proof of work
 - [ ] adjust l1 and l2 as the network grobs using an esimate as described [here](https://research.neustar.biz/2012/07/09/sketch-of-the-day-k-minimum-values/)
 - [ ] use the crypto hash for node hashing also for sampling instead of farm hash
+
+## When to refresh the view
+Refreshing the view seems to be an open design decision.
+- Always refresh unless push is too big
+- Only refresh if there are pushed or pullsed nodes
+- Only refresh if there are both push and pulls
+
+Always refresh makes sure it is the most up-to-date but causes the view to
+easily fluctuate. but thats were the history sample is for?
