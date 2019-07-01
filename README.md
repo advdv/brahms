@@ -28,7 +28,7 @@ This is an experimental implementation of [Brahms: Byzantine resilient random me
 - [x] (fix) make sure its not possible for others to push others node's "self" info
 - [x] finish basic agent implementation
 - [x] add a general interface to the agent to dissemate messages
-- [ ] add a simple way to dissemate custom message in brahmsd
+- [x] add a simple way to dissemate custom message in brahmsd
 
 - [ ] add a cellular consensus mechanism on sets
 - [ ] probe only a part of the sampled nodes at a time (round-robin, like SWIM)

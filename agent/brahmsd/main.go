@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"crypto/sha256"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -47,6 +50,45 @@ func main() {
 	}
 
 	a.Join(v)
+
+	// start reading messages, dedublicate and prevent message storm
+	go func() {
+		received := map[[32]byte]struct{}{}
+
+		for {
+			msg, err := a.Receive()
+			if msg == nil || err != nil {
+				break
+			}
+
+			h := sha256.Sum256(msg)
+			if _, ok := received[h]; ok {
+				continue //already received
+			}
+
+			fmt.Println("new message, relaying:", msg)
+			if len(msg) > 0 {
+				if a.Emit(msg, 2, 1, time.Second) {
+					received[h] = struct{}{}
+				}
+			}
+		}
+	}()
+
+	// start emittin messages from the terminal
+	stat, _ := os.Stdin.Stat()
+	if (stat.Mode() & os.ModeCharDevice) != 0 {
+		go func() {
+			scanner := bufio.NewScanner(os.Stdin)
+			for {
+				scanner.Scan()
+				msg := scanner.Bytes()
+				if len(msg) > 0 {
+					fmt.Println(a.Emit(msg, 1, 1, time.Second))
+				}
+			}
+		}()
+	}
 
 	log.Printf("agent started with v0=%s, advertising as: %v", v, a.Self())
 	sig := <-sigs

@@ -142,7 +142,7 @@ func (a *Agent) Receive() (msg []byte, err error) {
 // Join the network and starts the protocol
 func (a *Agent) Join(v brahms.View) {
 	a.core = brahms.NewCore(a.rnd, a.self, v, a.params, a.transport, a.timeouts.invalidation)
-	a.handler = httpt.NewHandler(a.core, 0, a.timeouts.receive)
+	a.handler = httpt.NewHandler(a.core, 1, a.timeouts.receive)
 	a.server = &http.Server{
 		Handler:      a.handler,
 		ReadTimeout:  5 * time.Second,
