@@ -16,6 +16,7 @@ import (
 
 // Agent participates in a brahm gossip network
 type Agent struct {
+	rnd       *rand.Rand
 	logs      *log.Logger
 	self      *brahms.Node
 	core      *brahms.Core
@@ -24,8 +25,10 @@ type Agent struct {
 	listener  net.Listener
 	server    *http.Server
 	params    brahms.P
-	done      chan struct{}
-	timeouts  struct {
+
+	done chan struct{}
+
+	timeouts struct {
 		validate     time.Duration
 		update       time.Duration
 		invalidation time.Duration
@@ -38,6 +41,7 @@ func New(logw io.Writer, cfg *Config) (a *Agent, err error) {
 		logs:   log.New(logw, "agent/agent: ", 0),
 		params: cfg.Params,
 		done:   make(chan struct{}),
+		rnd:    rand.New(cryptoSource{}),
 	}
 
 	a.timeouts.validate = cfg.ValidateTimeout
@@ -69,14 +73,13 @@ func (a *Agent) Self() brahms.Node {
 
 // Join the network and starts the protocol
 func (a *Agent) Join(v brahms.View) {
-	//@TODO setup a crypto rand
-	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	a.core = brahms.NewCore(rnd, a.self, v, a.params, a.transport, a.timeouts.invalidation)
+	a.core = brahms.NewCore(a.rnd, a.self, v, a.params, a.transport, a.timeouts.invalidation)
 	a.handler = httpt.NewHandler(a.core)
 	a.server = &http.Server{
-		Handler: a.handler,
-		//@TODO add production timeouts
+		Handler:      a.handler,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
 
 	// start serving http requests
@@ -91,14 +94,10 @@ func (a *Agent) Join(v brahms.View) {
 
 	// start the protocol loop
 	go func() {
-		var i int
 		for {
 			a.core.UpdateView(a.timeouts.update)
 			a.core.ValidateSample(a.timeouts.validate)
 
-			a.logs.Printf("%.5d[%s] view%s sample%s", i, a.self, a.core.ReadView(), a.core.Sample())
-
-			i++
 			select {
 			case <-a.done:
 				a.done <- struct{}{}
@@ -112,12 +111,10 @@ func (a *Agent) Join(v brahms.View) {
 // Shutdown attempts to close the agent gracefully
 func (a *Agent) Shutdown(ctx context.Context) (err error) {
 	if a.core == nil {
-		//@TODO only shutdown the listener
 		return a.listener.Close()
 	}
 
 	a.core.Deactivate()
-	//@TODO wait for the absense of incoming pulls/probes/pushes
 	a.done <- struct{}{}
 	<-a.done
 

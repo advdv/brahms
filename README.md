@@ -26,12 +26,18 @@ This is an experimental implementation of [Brahms: Byzantine resilient random me
 - [x] (fix) prevent pulling of nodes that were recently invalidated
 - [x] refactor probing to not probe double samples
 - [x] (fix) make sure its not possible for others to push others node's "self" info
+- [x] finish basic agent implementation
+
+- [ ] add a general interface to the agent to dissemate messages
+- [ ] add a cellular consensus mechanism on sets
 - [ ] probe only a part of the sampled nodes at a time
+
 - [ ] implement a limited push with a small proof of work
 - [ ] adjust l1 and l2 as the network grobs using an esimate as described [here](https://research.neustar.biz/2012/07/09/sketch-of-the-day-k-minimum-values/)
 - [ ] use the crypto hash for node hashing also for sampling instead of farm hash
 - [ ] store the node's sample on disk
 - [ ] measure if lock contention on sampler is too high
+- [ ] only full shutdown gossip agent if no messages arrive anymore
 
 ## When to refresh the view
 Refreshing the view seems to be an open design decision.
