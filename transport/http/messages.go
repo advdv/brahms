@@ -20,3 +20,8 @@ type MsgPullResp []MsgNode
 type MsgProbeResp struct {
 	Active bool `json:"active"`
 }
+
+// MsgEmitReq requests a peer to emit data
+type MsgEmitReq struct {
+	Data []byte `json:"data"`
+}

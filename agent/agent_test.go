@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/advanderveer/brahms"
 	"github.com/advanderveer/brahms/agent"
@@ -42,4 +43,46 @@ func TestAgentInit(t *testing.T) {
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	test.Ok(t, a.Shutdown(context.Background()))
+}
+
+func TestSmallAgentNetwork(t *testing.T) {
+	n, q, m := 5, 3, 3
+
+	done := make(chan struct{}, q)
+	agents := make([]*agent.Agent, 0, n)
+	for i := 0; i < n; i++ {
+		cfg := agent.LocalTestConfig()
+		cfg.ReceiveTimeout = time.Millisecond * 40
+
+		a, err := agent.New(os.Stderr, cfg)
+		test.Ok(t, err)
+
+		agents = append(agents, a)
+		go func(a *agent.Agent) {
+			for {
+				msg, err := a.Receive()
+				if msg == nil || err != nil {
+					continue
+				}
+
+				test.Equals(t, []byte("foo"), msg)
+				done <- struct{}{}
+			}
+		}(a)
+
+	}
+
+	for _, a := range agents {
+		first := agents[0].Self()
+		a.Join(brahms.NewView(&first))
+	}
+
+	test.Equals(t, false, agents[0].Emit([]byte("foo"), q, m, time.Millisecond*100))
+	time.Sleep(time.Millisecond * 400)
+	test.Equals(t, true, agents[0].Emit([]byte("foo"), q, m, time.Second))
+
+	<-done
+	<-done
+	<-done
+	<-done
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -38,6 +39,10 @@ func (tr *Transport) Request(ctx context.Context, method string, n brahms.Node, 
 		return TransportErr{err, "request_execution"}
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		return TransportErr{errors.New("expected status OK"), "response_status"}
+	}
+
 	if msg != nil {
 		defer resp.Body.Close()
 		dec := json.NewDecoder(resp.Body)
@@ -51,18 +56,21 @@ func (tr *Transport) Request(ctx context.Context, method string, n brahms.Node, 
 }
 
 // RequestOrLog will perform the request and log the error if anything fails
-func (tr *Transport) RequestOrLog(ctx context.Context, method string, n brahms.Node, path string, body io.Reader, msg interface{}) {
+func (tr *Transport) RequestOrLog(ctx context.Context, method string, n brahms.Node, path string, body io.Reader, msg interface{}) (ok bool) {
 	err := tr.Request(ctx, method, n, path, body, msg)
 	if err != nil {
 		tr.logs.Printf("failed to perform request: %v", err)
+		return false
 	}
+
+	return true
 }
 
 // Push implements node information pushing
 func (tr *Transport) Push(ctx context.Context, self brahms.Node, to brahms.Node) {
 	msg := MsgNode{IP: self.IP, Port: self.Port}
 	data, _ := json.Marshal(MsgPushReq{msg})
-	tr.RequestOrLog(ctx, http.MethodGet, to, "/push", bytes.NewReader(data), nil)
+	tr.RequestOrLog(ctx, http.MethodPost, to, "/push", bytes.NewReader(data), nil)
 }
 
 // Pull impelents node information pulling
@@ -84,6 +92,14 @@ func (tr *Transport) Probe(ctx context.Context, c chan<- brahms.NID, id brahms.N
 	msg := new(MsgProbeResp)
 	tr.RequestOrLog(ctx, http.MethodGet, n, "/probe", nil, msg)
 	if msg.Active {
+		c <- id
+	}
+}
+
+// Emit implements custom message emitting
+func (tr *Transport) Emit(ctx context.Context, c chan<- brahms.NID, id brahms.NID, msg []byte, to brahms.Node) {
+	data, _ := json.Marshal(MsgEmitReq{Data: msg})
+	if tr.RequestOrLog(ctx, http.MethodPost, to, "/emit", bytes.NewReader(data), nil) {
 		c <- id
 	}
 }

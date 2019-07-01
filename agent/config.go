@@ -18,6 +18,7 @@ type Config struct {
 	ValidateTimeout     time.Duration
 	UpdateTimeout       time.Duration
 	InvalidationTimeout time.Duration
+	ReceiveTimeout      time.Duration
 
 	Params brahms.P
 }
@@ -30,7 +31,9 @@ func LocalTestConfig() (cfg *Config) {
 		ValidateTimeout:     time.Millisecond * 100,
 		UpdateTimeout:       time.Millisecond * 200,
 		InvalidationTimeout: time.Second * 5,
+		ReceiveTimeout:      time.Second,
 	}
+
 	cfg.Params, _ = brahms.NewParams(0.45, 0.45, 0.1, 10, 10)
 	return
 }

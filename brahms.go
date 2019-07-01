@@ -8,6 +8,7 @@ import (
 
 // Transport describes how a node communicates with its peers
 type Transport interface {
+	Emit(ctx context.Context, c chan<- NID, id NID, msg []byte, to Node)
 	Push(ctx context.Context, self Node, to Node)
 	Pull(ctx context.Context, c chan<- View, from Node)
 	Prober

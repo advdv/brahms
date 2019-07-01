@@ -2,12 +2,14 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log"
 	"math/rand"
 	"net"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/advanderveer/brahms"
@@ -20,7 +22,7 @@ type Agent struct {
 	logs      *log.Logger
 	self      *brahms.Node
 	core      *brahms.Core
-	handler   http.Handler
+	handler   *httpt.Handler
 	transport brahms.Transport
 	listener  net.Listener
 	server    *http.Server
@@ -32,6 +34,7 @@ type Agent struct {
 		validate     time.Duration
 		update       time.Duration
 		invalidation time.Duration
+		receive      time.Duration
 	}
 }
 
@@ -47,6 +50,7 @@ func New(logw io.Writer, cfg *Config) (a *Agent, err error) {
 	a.timeouts.validate = cfg.ValidateTimeout
 	a.timeouts.update = cfg.UpdateTimeout
 	a.timeouts.invalidation = cfg.InvalidationTimeout
+	a.timeouts.receive = cfg.ReceiveTimeout
 
 	a.listener, err = net.Listen("tcp", cfg.ListenAddr.String()+":"+strconv.Itoa(int(cfg.ListenPort)))
 	if err != nil {
@@ -71,10 +75,74 @@ func (a *Agent) Self() brahms.Node {
 	return *a.self
 }
 
+// Emit dissemates the message to N peers and succeeds unless less than m
+// peers responded with success
+func (a *Agent) Emit(msg []byte, n, m int, to time.Duration) (ok bool) {
+	peers := a.core.Sample().Pick(a.rnd, n)
+
+	// emit to all peers, done indicates either the ctx expired or all responded in time
+	emits := make(chan brahms.NID, len(peers))
+	done := make(chan struct{})
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), to)
+		defer cancel()
+
+		var wg sync.WaitGroup
+		for id, p := range peers {
+			wg.Add(1)
+
+			// run transport request in separate routines
+			go func(id brahms.NID, p brahms.Node) { a.transport.Emit(ctx, emits, id, msg, p); wg.Done() }(id, p)
+		}
+
+		//wait for them to finish, context will cancel if it takes too long
+		wg.Wait()
+		close(done)
+	}()
+	<-done
+
+	// drain the ok's we got at this point
+	oks := map[brahms.NID]struct{}{}
+DRAIN:
+	for {
+		select {
+		case id := <-emits:
+			oks[id] = struct{}{}
+		default:
+			break DRAIN
+		}
+	}
+
+	if len(oks) < m {
+		return false
+	}
+
+	return true
+}
+
+// Receive will block until a new message can be read from the network
+func (a *Agent) Receive() (msg []byte, err error) {
+	if a.handler == nil {
+		// @TODO if we call receive when there is no handler we need to block a bit
+		// to not exhaust the cpu in an uncostrained for loop. In reality we would
+		// like to just initiate the handler when we initiate the agent
+		time.Sleep(time.Millisecond)
+		return nil, Err{errors.New("uninitialized handler"), "receive"}
+	}
+
+	msg = <-a.handler.C
+	if msg == nil {
+		//@TODO allow handler shutdown to actually trigger this
+		return nil, io.EOF
+	}
+
+	return
+}
+
 // Join the network and starts the protocol
 func (a *Agent) Join(v brahms.View) {
 	a.core = brahms.NewCore(a.rnd, a.self, v, a.params, a.transport, a.timeouts.invalidation)
-	a.handler = httpt.NewHandler(a.core)
+	a.handler = httpt.NewHandler(a.core, 0, a.timeouts.receive)
 	a.server = &http.Server{
 		Handler:      a.handler,
 		ReadTimeout:  5 * time.Second,

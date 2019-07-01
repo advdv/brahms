@@ -57,3 +57,8 @@ func (t *MockTransport) Pull(ctx context.Context, c chan<- brahms.View, from bra
 
 	c <- v
 }
+
+// Emit implements custom message emit
+func (t *MockTransport) Emit(ctx context.Context, c chan<- brahms.NID, id brahms.NID, msg []byte, to brahms.Node) {
+	panic("not implemented")
+}

@@ -65,3 +65,8 @@ func (t *MemNetTransport) Pull(ctx context.Context, cc chan<- brahms.View, from 
 	t.mu.RUnlock()
 	cc <- c.ReadView()
 }
+
+// Emit implements the message emit
+func (t *MemNetTransport) Emit(ctx context.Context, c chan<- brahms.NID, id brahms.NID, msg []byte, to brahms.Node) {
+	panic("not implemented")
+}

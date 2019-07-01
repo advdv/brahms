@@ -20,7 +20,7 @@ var _ brahms.Transport = &httpt.Transport{}
 
 func TestTransportRequest(t *testing.T) {
 	b := &mockBrahms{}
-	s := httptest.NewServer(httpt.NewHandler(b))
+	s := httptest.NewServer(httpt.NewHandler(b, 0, time.Second))
 
 	defer s.Close()
 	host, ports, _ := net.SplitHostPort(s.Listener.Addr().String())
@@ -42,8 +42,13 @@ func TestTransportRequest(t *testing.T) {
 		test.Equals(t, "request_execution", err.(httpt.TransportErr).Op)
 	})
 
-	t.Run("request execution", func(t *testing.T) {
+	t.Run("response status", func(t *testing.T) {
 		err := tr.Request(context.Background(), "GET", *brahms.N(host, uint16(port)), "/def", nil, map[string]interface{}{})
+		test.Equals(t, "response_status", err.(httpt.TransportErr).Op)
+	})
+
+	t.Run("response decoding", func(t *testing.T) {
+		err := tr.Request(context.Background(), "POST", *brahms.N(host, uint16(port)), "/push", strings.NewReader(`{}`), map[string]interface{}{})
 		test.Equals(t, "response_decoding", err.(httpt.TransportErr).Op)
 	})
 
@@ -55,7 +60,8 @@ func TestTransportRequest(t *testing.T) {
 
 func TestTransport(t *testing.T) {
 	b := &mockBrahms{}
-	s := httptest.NewServer(httpt.NewHandler(b))
+	h := httpt.NewHandler(b, 0, time.Second)
+	s := httptest.NewServer(h)
 
 	defer s.Close()
 	host, ports, _ := net.SplitHostPort(s.Listener.Addr().String())
@@ -78,6 +84,26 @@ func TestTransport(t *testing.T) {
 			test.Equals(t, 1, len(b.pushes))
 			test.Equals(t, net.ParseIP("127.0.0.1"), b.pushes[0].IP)
 			test.Equals(t, uint16(9090), b.pushes[0].Port)
+		}
+	})
+
+	t.Run("emit", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		go func() {
+			for range <-h.C {
+			}
+		}()
+
+		c := make(chan brahms.NID, 1)
+		tr.Emit(ctx, c, brahms.NID{0x01}, []byte("foo"), *brahms.N(host, uint16(port)))
+
+		select {
+		case <-time.After(time.Second):
+			t.Fatal("took too long")
+		case i := <-c:
+			test.Equals(t, brahms.NID{0x01}, i)
 		}
 	})
 
