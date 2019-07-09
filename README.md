@@ -33,9 +33,10 @@ This is an experimental implementation of [Brahms: Byzantine resilient random me
 - [x] probe only a part of the sampled nodes at a time
 - [x] (fix) make sure probes (validation) returns early if all respond in time
 
-- [ ] implement a limited push with a small proof of work
-- [ ] randomly clear samples and reset with new seed data to better shield against adverary contamination
+- [ ] implement a limited push with a small proof of work to prevent large scale push pollution (as per paper)
+- [ ] encrypt messages using https or asymetric encryption (as per paper)
 
+- [ ] randomly clear samples and reset with new seed data to better shield against adverary contamination
 - [ ] add a cellular consensus mechanism on sets
 - [ ] adjust l1 and l2 as the network grobs using an esimate as described [here](https://research.neustar.biz/2012/07/09/sketch-of-the-day-k-minimum-values/)
 - [ ] store the node's sample on disk
