@@ -2,6 +2,7 @@ package brahms_test
 
 import (
 	"context"
+	"math/big"
 	"math/rand"
 	"testing"
 	"time"
@@ -43,7 +44,7 @@ func TestSampler(t *testing.T) {
 		s.Update(brahms.NewView(n3))
 	}
 
-	test.Equals(t, brahms.NewView(n2, n2, n4, n3), s.Sample())
+	test.Equals(t, brahms.NewView(n1, n2, n4, n3), s.Sample())
 
 	t.Run("clearing", func(t *testing.T) {
 		s.Clear()
@@ -89,4 +90,9 @@ func TestSamplerValidation(t *testing.T) {
 
 	s.Validate(time.Millisecond * 10) //should expire the invalidation
 	test.Equals(t, false, s.RecentlyInvalidated(n3.Hash()))
+}
+
+func TestSampleRank(t *testing.T) {
+	test.Equals(t, 0, brahms.SampleRank{}.ToInt().Cmp(big.NewInt(0)))
+	test.Equals(t, "115792089237316195423570985008687907853269984665640564039457584007913129639935", brahms.MaxSampleRank.ToInt().String())
 }

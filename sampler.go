@@ -2,13 +2,28 @@ package brahms
 
 import (
 	"context"
-	"math"
+	"crypto/sha256"
+	"math/big"
 	"math/rand"
 	"sync"
 	"time"
-
-	"github.com/dgryski/go-farm"
 )
+
+// SampleRank describes a rank based on 32 bytes of data as a big number
+type SampleRank [32]byte
+
+// ToInt converts the bytes to the big nr
+func (sr SampleRank) ToInt() *big.Int {
+	return new(big.Int).SetBytes(sr[:])
+}
+
+// MaxSampleRank is the maximum rank a sample can reach
+var MaxSampleRank = SampleRank{
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+}
 
 // Prober allows for probing peers to determine if they are still online
 type Prober interface {
@@ -18,8 +33,8 @@ type Prober interface {
 // Sampler holds a sample from a node stream such that it is not biased by the
 // nr of times a appears in the stream.
 type Sampler struct {
-	seeds   []uint64
-	mins    []uint64
+	seeds   [][32]byte
+	mins    []SampleRank
 	sample  []Node
 	invalid map[NID]time.Time
 
@@ -31,17 +46,17 @@ type Sampler struct {
 // NewSampler initializes a sampler with the provided source of randomness
 func NewSampler(rnd *rand.Rand, l2 int, pr Prober, ito time.Duration) (s *Sampler) {
 	s = &Sampler{
-		mins:    make([]uint64, l2),
+		mins:    make([]SampleRank, l2),
 		sample:  make([]Node, l2),
-		seeds:   make([]uint64, l2),
+		seeds:   make([][32]byte, l2),
 		invalid: make(map[NID]time.Time),
 		ito:     ito,
 		prober:  pr,
 	}
 
 	for i := 0; i < l2; i++ {
-		s.mins[i] = math.MaxUint64
-		s.seeds[i] = rnd.Uint64()
+		s.mins[i] = MaxSampleRank
+		rnd.Read(s.seeds[i][:])
 	}
 
 	return
@@ -64,6 +79,8 @@ func (s *Sampler) Validate(to time.Duration) {
 		}
 
 		// wait for timeout
+
+		// @TODO return early if all probed nodes return in time
 		<-ctx.Done()
 	}()
 
@@ -94,7 +111,7 @@ DRAIN:
 		// reset the sample otherwise and mark as invalidated
 		s.invalid[id] = time.Now()
 		s.sample[i] = Node{}
-		s.mins[i] = math.MaxUint64
+		s.mins[i] = MaxSampleRank
 	}
 
 	// clear old invalidated nodes
@@ -117,13 +134,12 @@ func (s *Sampler) Update(v View) {
 
 	for _, n := range v.Sorted() {
 
-		// @TODO we could use the crypto hash we're already using to
-		// also "HashWithSeed" instead of the farm hash.
-
 		id := n.Hash()
 		for i, v := range s.mins {
-			hv := farm.Hash64WithSeed(id[:], s.seeds[i])
-			if hv < v {
+
+			// we use a seeded crypto hash to rank a sample
+			hv := SampleRank(sha256.Sum256(append(id[:], s.seeds[i][:]...)))
+			if hv.ToInt().Cmp(v.ToInt()) < 0 {
 				s.mins[i] = hv
 				s.sample[i] = n
 			}
@@ -155,7 +171,7 @@ func (s *Sampler) Clear() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for i := range s.mins {
-		s.mins[i] = math.MaxUint64
+		s.mins[i] = MaxSampleRank
 	}
 
 	s.sample = make([]Node, len(s.mins))
