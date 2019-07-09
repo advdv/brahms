@@ -30,9 +30,9 @@ This is an experimental implementation of [Brahms: Byzantine resilient random me
 - [x] add a general interface to the agent to dissemate messages
 - [x] add a simple way to dissemate custom message in brahmsd
 - [x] use the crypto hash for node hashing also for sampling instead of farm hash
+- [x] probe only a part of the sampled nodes at a time
+- [x] (fix) make sure probes (validation) returns early if all respond in time
 
-- [ ] probe only a part of the sampled nodes at a time (round-robin, like SWIM)
-- [ ] (fix) make sure probes (validation) returns early if all respond in time
 - [ ] implement a limited push with a small proof of work
 - [ ] randomly clear samples and reset with new seed data to better shield against adverary contamination
 
@@ -41,6 +41,7 @@ This is an experimental implementation of [Brahms: Byzantine resilient random me
 - [ ] store the node's sample on disk
 - [ ] measure if lock contention on sampler is too high
 - [ ] only full shutdown gossip agent if no messages arrive anymore
+- [ ] for probing only a subset, use a randomized order approach (Like SWIM) instead of random picking
 
 ## When to refresh the view
 Refreshing the view seems to be an open design decision.

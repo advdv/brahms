@@ -54,7 +54,7 @@ func (c *Core) Self() (n Node) {
 
 // ValidateSample validates if all samples are still responding
 func (c *Core) ValidateSample(to time.Duration) {
-	c.sampler.Validate(to)
+	c.sampler.Validate(c.rnd, c.params.VN(), to)
 }
 
 // UpdateView runs the algorithm to update the view

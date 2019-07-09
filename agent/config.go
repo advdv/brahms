@@ -34,6 +34,6 @@ func LocalTestConfig() (cfg *Config) {
 		ReceiveTimeout:      time.Second,
 	}
 
-	cfg.Params, _ = brahms.NewParams(0.45, 0.45, 0.1, 10, 10)
+	cfg.Params, _ = brahms.NewParams(0.45, 0.45, 0.1, 10, 10, 2)
 	return
 }

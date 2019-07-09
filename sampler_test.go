@@ -74,21 +74,24 @@ func TestSamplerValidation(t *testing.T) {
 
 	r := rand.New(rand.NewSource(3))
 	s := brahms.NewSampler(r, 15, pr, time.Millisecond*10)
-	s.Validate(time.Millisecond)
+	s.Validate(r, 15, time.Millisecond)
 
 	s.Update(brahms.NewView(n1, n2, n3, n4))
 	test.Equals(t, brahms.NewView(n1, n2, n3, n4), s.Sample())
 	test.Equals(t, false, s.RecentlyInvalidated(n3.Hash()))
 
-	s.Validate(time.Millisecond)
+	s.Validate(r, 15, time.Millisecond)
 	test.Equals(t, brahms.NewView(n1, n2, n4), s.Sample()) //n3 was reset
 	test.Equals(t, true, s.RecentlyInvalidated(n3.Hash()))
 	test.Equals(t, false, s.RecentlyInvalidated(n1.Hash()))
 
-	s.Validate(time.Millisecond) //should still be recently invaidated
+	s.Validate(r, 15, time.Millisecond) //should still be recently invalidated
 	test.Equals(t, true, s.RecentlyInvalidated(n3.Hash()))
 
-	s.Validate(time.Millisecond * 10) //should expire the invalidation
+	//waithing a bit should cause n3 to no longer be recently invalidated
+	time.Sleep(time.Millisecond * 10)
+
+	s.Validate(r, 15, time.Millisecond*10) //should expire the invalidation
 	test.Equals(t, false, s.RecentlyInvalidated(n3.Hash()))
 }
 

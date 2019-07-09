@@ -62,27 +62,30 @@ func NewSampler(rnd *rand.Rand, l2 int, pr Prober, ito time.Duration) (s *Sample
 	return
 }
 
-// Validate if the currently sampled nodes are still alive
-func (s *Sampler) Validate(to time.Duration) {
-	sample := s.Sample()
+// Validate if a random subset of the sampled nodes are still alive
+func (s *Sampler) Validate(rnd *rand.Rand, n int, to time.Duration) {
+	sample := s.Sample().Pick(rnd, n)
 	probes := make(chan NID, len(sample))
 
 	// @TODO probe only an unpredictable subset every call
 
-	func() {
+	done := make(chan struct{})
+	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), to)
 		defer cancel()
 
 		// probe all currently sampled nodes
+		var wg sync.WaitGroup
 		for id, n := range sample {
-			go s.prober.Probe(ctx, probes, id, n)
+			wg.Add(1)
+			go func(id NID, n Node) { s.prober.Probe(ctx, probes, id, n); wg.Done() }(id, n)
 		}
 
-		// wait for timeout
-
-		// @TODO return early if all probed nodes return in time
-		<-ctx.Done()
+		// wait for all the return early, or context to cancel whatever is still probing
+		wg.Wait()
+		close(done)
 	}()
+	<-done
 
 	//read the indexes of all probes that returned a response
 	alive := map[NID]struct{}{}

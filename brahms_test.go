@@ -15,7 +15,7 @@ func TestBrahmsNoReply(t *testing.T) {
 	n1 := brahms.N("127.0.0.1", 1)
 	pr := proberFunc(func(ctx context.Context, c chan<- brahms.NID, i brahms.NID, n brahms.Node) {})
 
-	p, _ := brahms.NewParams(0.1, 0.7, 0.2, 10, 2)
+	p, _ := brahms.NewParams(0.1, 0.7, 0.2, 10, 2, 2)
 	r := rand.New(rand.NewSource(0))
 	s := brahms.NewSampler(r, p.L2(), pr, time.Second)
 	self := n1
@@ -43,7 +43,7 @@ func TestBrahmsWithJustPushes(t *testing.T) {
 	n4 := brahms.N("127.0.0.1", 4)
 	n5 := brahms.N("127.0.0.1", 5)
 
-	p, _ := brahms.NewParams(0.1, 0.7, 0.2, 10, 2)
+	p, _ := brahms.NewParams(0.1, 0.7, 0.2, 10, 2, 2)
 	r := rand.New(rand.NewSource(1))
 	pr := proberFunc(func(ctx context.Context, c chan<- brahms.NID, id brahms.NID, n brahms.Node) {})
 	s := brahms.NewSampler(r, p.L2(), pr, time.Second)
@@ -82,14 +82,14 @@ func TestBrahmsWithPullsAndPushes(t *testing.T) {
 	n4 := brahms.N("127.0.0.1", 4)
 	n5 := brahms.N("127.0.0.1", 5)
 
-	p, _ := brahms.NewParams(0.1, 0.7, 0.2, 10, 4)
+	p, _ := brahms.NewParams(0.1, 0.7, 0.2, 10, 4, 2)
 	r := rand.New(rand.NewSource(1))
 	pr := proberFunc(func(ctx context.Context, c chan<- brahms.NID, i brahms.NID, n brahms.Node) {})
 	s := brahms.NewSampler(r, p.L2(), pr, time.Second)
 
 	// sample n5, then probe it to recently invalidate it
 	s.Update(brahms.NewView(n5))
-	s.Validate(time.Millisecond * 5)
+	s.Validate(r, 4, time.Millisecond*5)
 
 	self := n1
 	other := n2

@@ -26,15 +26,16 @@ type P interface {
 	L1α() int
 	L1β() int
 	L1γ() int
+	VN() int
 }
 
 // NewParams checks initializes the protocol parameters
-func NewParams(α, β, γ float64, l1, l2 int) (p P, err error) {
+func NewParams(α, β, γ float64, l1, l2, vn int) (p P, err error) {
 	if α+β+γ != 1 {
 		return nil, ErrPartsDonAddToOne
 	}
 
-	params := &params{}
+	params := &params{vn: vn}
 	if l1 < minL1 {
 		return nil, ErrL1AtLeast
 	}
@@ -57,9 +58,11 @@ type params struct {
 	al1 int
 	bl1 int
 	cl1 int
+	vn  int
 }
 
 func (p *params) L2() int  { return p._l2 }
 func (p *params) L1α() int { return p.al1 }
 func (p *params) L1β() int { return p.bl1 }
 func (p *params) L1γ() int { return p.cl1 }
+func (p *params) VN() int  { return p.vn }

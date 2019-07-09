@@ -22,7 +22,7 @@ func TestMiniNetCore(t *testing.T) {
 	n3 := brahms.N("127.0.0.1", 3)
 
 	rnd := rand.New(rand.NewSource(1))
-	prm, _ := brahms.NewParams(0.45, 0.45, 0.1, 100, 10)
+	prm, _ := brahms.NewParams(0.45, 0.45, 0.1, 100, 10, 2)
 
 	//create a mini network with three cores
 	tr := transport.NewMemNetTransport()
@@ -79,7 +79,7 @@ func TestLargerNetwork(t *testing.T) {
 		0.45,
 		0.45,
 		0.1,
-		l, l,
+		l, l, l/5,
 	)
 
 	tr := transport.NewMemNetTransport()

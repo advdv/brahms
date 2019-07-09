@@ -7,7 +7,7 @@ import (
 )
 
 func TestParams(t *testing.T) {
-	p1, err := NewParams(0.1, 0.7, 0.2, 100, 10)
+	p1, err := NewParams(0.1, 0.7, 0.2, 100, 10, 5)
 	test.Ok(t, err)
 	test.Equals(t, 10, p1.L1α())
 	test.Equals(t, 70, p1.L1β())
@@ -16,12 +16,12 @@ func TestParams(t *testing.T) {
 }
 
 func TestParamsFails(t *testing.T) {
-	_, err := NewParams(0.1, 0.6, 0.2, 100, 10)
+	_, err := NewParams(0.1, 0.6, 0.2, 100, 10, 5)
 	test.Equals(t, ErrPartsDonAddToOne, err)
 
-	_, err = NewParams(0.1, 0.7, 0.2, 1, 10)
+	_, err = NewParams(0.1, 0.7, 0.2, 1, 10, 5)
 	test.Equals(t, ErrL1AtLeast, err)
 
-	_, err = NewParams(0.1, 0.7, 0.2, 10, 0)
+	_, err = NewParams(0.1, 0.7, 0.2, 10, 0, 5)
 	test.Equals(t, ErrL2AtLeast, err)
 }
